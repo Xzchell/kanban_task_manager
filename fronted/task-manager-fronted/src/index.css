@@ -1,0 +1,262 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,200..1000;1,200..1000&display=swap');
+:root {
+  /* Основная палитра со скриншота */
+  --bg-main: #ffffff;          /* Светло-серый фон страницы */
+  --bg-card: #ffffff;          /* Белые карточки */
+  --text-main: #000000;        /* Глубокий черный для заголовков */
+  --text-muted: #8e8e93;       /* Серый для подзаголовков и подписей */
+  
+  /* Акценты */
+  --accent-yellow: #ffc107;    /* Желтый (кнопки, активные элементы) */
+  --accent-black: #000000;     /* Черный для активных вкладок/кнопок */
+  
+  /* Интерфейсные мелочи */
+  --border-light: #eeeeee;
+  --radius-xl: 32px;           /* Большие скругления для внешних блоков */
+  --radius-lg: 20px;           /* Для внутренних карточек */
+  
+  /* Шрифты */
+  --font-rounded: 'Nunito', sans-serif;
+}
+
+body {
+  margin: 0;
+  background-color: var(--bg-main);
+  font-family: var(--sans);
+  color: var(--text-main);
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* Сайдбар (Dashboard, Analytics и т.д.) */
+.sidebar {
+  width: 240px;
+  padding: 40px 20px;
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nav-item {
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  text-decoration: none;
+  transition: 0.2s;
+}
+
+.nav-item.active {
+  background: var(--accent-black);
+  color: white;
+}
+
+/* Главный контент */
+.main-content {
+  flex: 1;
+  padding: 40px;
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* Сетка как на скрине */
+  gap: 30px;
+}
+
+/* Заголовки */
+h1 {
+  font-size: 32px;
+  font-weight: 800;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.02em;
+  font-family: var(--font-rounded);
+}
+h2{
+  font-family: var(--font-rounded);
+  font-size: '18px';
+  font-weight: 700;
+}
+h3{
+  font-family: var(--font-rounded);
+  font-size: '14px';
+  font-weight: 650;
+}
+
+label{
+  font-weight: 600;
+  font-family: var(--font-rounded);
+  font-size: '12px';
+}
+
+b{
+  font-weight: 700;
+  font-family: var(--font-rounded);
+  font-size: '12px';
+}
+
+p {
+  font-family: var(--font-rounded);
+  color: #000000;
+}
+
+.subtitle {
+  color: var(--text-muted);
+  font-size: 18px;
+  margin-bottom: 30px;
+}
+
+.search-bar {
+  background: #f8f8f8;
+  border: none;
+  border-radius: 15px;
+  padding: 15px 20px;
+  width: 100%;
+  max-width: 400px;
+  margin-bottom: 40px;
+}
+
+.card {
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  border: 1px solid #f0f0f0;
+}
+
+.task-card {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.progress-bar {
+  height: 6px;
+  background: #f0f0f0;
+  border-radius: 10px;
+  margin-top: 15px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent-yellow);
+  border-radius: 10px;
+}
+
+.btn-play {
+  background: var(--accent-yellow);
+  border: none;
+  border-radius: 12px;
+  width: 45px;
+  height: 45px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add {
+  background: var(--accent-black);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.event-card {
+  background: var(--accent-yellow);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  color: var(--text-main);
+}
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background: #e3e3e3;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #cccccc;
+}
+.tiptap pre,
+.task_desc pre {
+  background-color: #1e1e1e !important;
+  color: #d4d4d4;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace; /* Скругленные моно-шрифты */
+  padding: 0.75rem 1rem;
+  border-radius: 12px; 
+  margin: 1rem 0;
+  line-height: 1.6;
+  border: 1px solid #333;
+  overflow-x: auto; 
+  display: block;
+}
+
+.tiptap pre code,
+.task_desc pre code {
+  color: inherit;
+  background: none;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.task-description pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: 'var(--font-rounded)', monospace; 
+  padding: 1rem;
+  border-radius: 12px;
+  overflow-x: auto;
+  border: 1px solid #2d2d2d;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+.tiptap.ProseMirror:focus {
+    outline: none !important;
+}
+
+/*Стили для todo-checkbox*/
+
+.tiptap ul[data-type="taskList"],
+.task_desc ul[data-type="taskList"] {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0;
+}
+
+.tiptap ul[data-type="taskList"] li,
+.task_desc ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start; 
+  margin-bottom: 0.5rem;
+}
+
+.tiptap ul[data-type="taskList"] label,
+.task_desc ul[data-type="taskList"] label {
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.tiptap ul[data-type="taskList"] input[type="checkbox"],
+.task_desc ul[data-type="taskList"] input[type="checkbox"] {
+  cursor: pointer;
+  accent-color: var(--accent-yellow);
+  width: 1.2rem;
+  height: 1.2rem;
+  margin: 0;
+  appearance: checkbox;
+  -webkit-appearance: checkbox;
+}
+
+.tiptap ul[data-type="taskList"] div,
+.task_desc ul[data-type="taskList"] div {
+  flex: 1;
+}
+
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div,
+.task_desc ul[data-type="taskList"] li[data-checked="true"] > div {
+  text-decoration: line-through;
+  color: var(--text-muted);
+}
+/*конец стилей*/

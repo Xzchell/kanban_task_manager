@@ -1,0 +1,1 @@
+export const API_URL = "http://localhost/task_manager/backend/data/api.php";
