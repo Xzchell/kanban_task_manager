@@ -9,10 +9,13 @@ require_once 'AuthService.php';
 
 $endpoint = $_GET['endpoint'] ?? '';
 $action = $_GET['action'] ?? '';
-$userId = $_GET['user_id'] ?? null;
+
+$userId = null;
 
 if ($endpoint !== 'auth'){
-    if (!checkAuth($pdo, $userId)) {
+    $userId = checkAuth($pdo);
+
+    if (!$userId) {
         http_response_code(401);
         echo json_encode(['error' => 'Unauthorized']);
         exit;

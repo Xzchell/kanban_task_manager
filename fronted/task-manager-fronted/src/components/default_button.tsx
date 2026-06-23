@@ -8,9 +8,11 @@ export interface IButtonProps {
     fullWidth?: boolean;
     status?: 'primary' | 'secondary' | 'danger';
     icon?: React.ReactNode;
+    br?: string;
+    leftIcon?: boolean;
 }
 
-const DefaultButton: React.FC<IButtonProps> = ({ text, onClick, fullWidth, disabled = false, status = 'primary', icon}) => {
+const DefaultButton: React.FC<IButtonProps> = ({ text, onClick, fullWidth, disabled = false, status = 'primary', icon, br = '12px', leftIcon = true }) => {
     const colors = {
         primary: { bg: '#0d6fff', text: '#fff', hover: '#005ae0' },
         secondary: { bg: '#d3d2d2', text: '#3f3f3f', hover: '#c2c1c1' },
@@ -35,12 +37,13 @@ const DefaultButton: React.FC<IButtonProps> = ({ text, onClick, fullWidth, disab
                 backgroundColor: currentTheme.bg,
                 color: currentTheme.text,
                 border: 'none',
-                borderRadius: '12px',
+                borderRadius: br,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontSize: '16px',
                 fontWeight: 'bold',
                 fontFamily: 'var(--font-rounded), sans-serif',
                 width: fullWidth ? '100%' : 'fit-content',
+                boxSizing: 'border-box',
                 outline: 'none',
                 display: 'flex',
                 alignItems: 'center',
@@ -49,8 +52,9 @@ const DefaultButton: React.FC<IButtonProps> = ({ text, onClick, fullWidth, disab
             }}
         >
             <div style={{display: 'flex', flexDirection: 'row' as const, gap: '5px', justifyItems: 'center', alignItems: 'center'}}>
-                {icon}
+                {leftIcon && icon}
                 {text}
+                {!leftIcon && icon}
             </div>
         </motion.button>
     );

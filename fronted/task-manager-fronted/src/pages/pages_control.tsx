@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import LoginPage from "./login_page";
 import TaskList from "./table_tasks_page";
 import { useAuth } from "../context/auth_context";
 import { motion, AnimatePresence, easeInOut } from "framer-motion";
@@ -7,7 +6,7 @@ import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import TeamPage from "./my_team_page";
 import SideBar from "../components/side_bar";
 import { ProfilePage } from "./my_profile_page";
-
+import LoginRegistrPage from "./login_registr_pages/login_registr_page";
 
 type AuthorizedLayoutProps = {
     children: ReactNode;
@@ -37,7 +36,7 @@ const PagesControl = () => {
                         {...animProps}
                         style={styles.pageStyles}
                     >
-                        <LoginPage />
+                        <LoginRegistrPage />
                     </motion.div>
                 ) : (
                     <AuthorizedLayout key="auth-zone">

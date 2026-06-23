@@ -30,7 +30,7 @@ const TaskList = () => {
         updateTaskData,
         createTask,
         deleteTask
-    } = useTask(user?.id, user?.token);
+    } = useTask(user?.id);
 
     const [isFilterOpen, setIsFilterOpen] = useState(false);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

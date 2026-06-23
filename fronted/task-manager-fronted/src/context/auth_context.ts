@@ -1,9 +1,9 @@
 import React from "react";
+import type { IUserData } from "./auth_provider";
 
 export interface IUser{
     id: number;
     role: IUserRole;
-    token: string;
     first_name: string;
     last_name: string;
     middle_name: string;
@@ -27,6 +27,9 @@ export interface IAuthContextType {
     isAuth: boolean;
     login: (loginStr: string, passwordStr: string) => Promise<{ success: boolean; message?: string }>;
     logout: () => void;
+    register: (userData : IUserData) => Promise<{ success: boolean; message?: string }>;
+    verifyRegisterCode: (email: string, code: string) => Promise<{ success: boolean; message?: string }>; 
+    resendRegisterCode: (email: string) => Promise<{ success: boolean; message?: string }>;
 }
 
 export const AuthContext = React.createContext<IAuthContextType | undefined>(undefined);

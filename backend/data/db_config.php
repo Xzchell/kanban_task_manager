@@ -1,12 +1,7 @@
 <?php
-header("Access-Control-Allow-Origin: *");
-header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
-header("Content-Type: application/json; charset=UTF-8");
-
-$host = "localhost";
+$host = "MySQL-8.0";
 $user = "root";
-$pass = "vertrigo";
+$pass = "";
 $db = "manager_tasks_bd";
 
 try {

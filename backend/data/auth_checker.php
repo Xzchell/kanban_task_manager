@@ -1,14 +1,13 @@
 <?php
-function checkAuth($pdo, $userId) {
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? '';
-    $token = str_replace('Bearer ', '', $authHeader);
+function checkAuth($pdo) {
+    $token = $_COOKIE['auth_token'] ?? '';
 
-    if (empty($token) || empty($userId) || empty($authHeader))
+    if (empty($token))
         return false;
 
-    $checkStmt = $pdo->prepare("SELECT u.id FROM user_sessions u WHERE u.user_id = ? AND u.token = ?");
-    $checkStmt->execute([$userId, $token]);
-    return (bool)$checkStmt->fetch();
+    $checkStmt = $pdo->prepare("SELECT u.user_id FROM user_sessions u WHERE u.token = ? LIMIT 1");
+    $checkStmt->execute([$token]);
+    $session = $checkStmt->fetch(PDO::FETCH_ASSOC);
+    return (bool)$session ? $session['user_id'] : null;
 }
 ?>

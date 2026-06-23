@@ -1,1 +1,1 @@
-export const API_URL = "http://localhost/task_manager/backend/data/api.php";
+export const API_URL = import.meta.env.VITE_API_URL;

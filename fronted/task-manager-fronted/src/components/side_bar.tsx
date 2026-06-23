@@ -3,17 +3,37 @@ import { useAuth } from "../context/auth_context";
 import { useNavigate } from "react-router-dom";
 import DefaultButton from "./default_button";
 import type { ISideBarItem } from "./side_bar_item";
+import { useState } from "react";
+import SegmentedToggle from "./segmented_toggle";
 
 const SideBar = () => {
     const navigate = useNavigate();
     const {logout : authlogout} = useAuth();
-    
+    const [activeTab, setActiveTab] = useState<string>("tasks");
     const handleLogout = () => authlogout()
     
     const sideBarItems: ISideBarItem[] = [
-        { id: 1, name: 'Задачи', icon: <i className="fa-solid fa-list-check"></i>, onClick: () => navigate('/tasks')},
-        { id: 2, name: 'Моя команда', icon: <i className="fa-solid fa-diagram-project"></i>, onClick: () => navigate('/team') },
-        { id: 3, name: 'Мой профиль', icon: <i className="fa-solid fa-users"></i>, onClick: () => {navigate('/profile')}},
+        { id: 1, name: 'Задачи', icon: <i className="fa-solid fa-list-check"></i>, onClick: () => {navigate('/tasks'); setActiveTab('tasks')}},
+        { id: 2, name: 'Моя команда', icon: <i className="fa-solid fa-diagram-project"></i>, onClick: () => {navigate('/team'); setActiveTab('team') }},
+        { id: 3, name: 'Мой профиль', icon: <i className="fa-solid fa-users"></i>, onClick: () => {navigate('/profile'); setActiveTab('profile')}},
+    ];
+
+    const toggleConfig = [
+        { 
+            id: "tasks", 
+            label: "Задачи", 
+            onClick: () => { setActiveTab('tasks'); navigate('/tasks') } 
+        },
+        { 
+            id: "myteam", 
+            label: "Моя команда", 
+            onClick: () => { setActiveTab('myteam'); navigate('/team')} 
+        },
+        { 
+            id: "myprofile", 
+            label: "Мой профиль", 
+            onClick: () => { setActiveTab('myprofile'); navigate('/profile')} 
+        }
     ];
 
 
@@ -24,7 +44,9 @@ const SideBar = () => {
                 <h2 style={{ color: '#000000', marginLeft: '10px', fontSize: '20px', fontFamily: 'var(--font-rounded)' }}>TaskManager</h2>
             </div>
             <div style={{display: 'flex', flexDirection: 'column' as const, flex: 1}}>
-                {sideBarItems.map((item) => (
+
+
+               {sideBarItems.map((item) => (
                     <DefaultButton 
                         onClick={item.onClick}
                         key={item.id} 
@@ -32,7 +54,8 @@ const SideBar = () => {
                         status='secondary'
                         fullWidth={true}
                     />
-                ))}              
+                ))}
+                
             </div>
             <DefaultButton 
                     text="Выйти из системы" 

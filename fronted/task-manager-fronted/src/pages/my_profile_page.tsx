@@ -30,21 +30,20 @@ interface IProfileData {
 export const ProfilePage: React.FC = () => {
   const { user } = useAuth(); 
   const userId = user?.id;
-  const token = user?.token;
-
+  
   const [profile, setProfile] = useState<IProfileData | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!userId || !token) return;
+    if (!userId) return;
 
     const fetchProfile = async () => {
       try {
         setLoading(true);
         const response = await axios.get(
           `${API_URL}?endpoint=users&action=get_profile&user_id=${userId}`, 
-          { headers: { 'Authorization': `Bearer ${token}` } }
+          { withCredentials: true }
         );
         if (response.data.error) throw new Error(response.data.error);
         setProfile(response.data);
@@ -62,9 +61,9 @@ export const ProfilePage: React.FC = () => {
     };
 
     fetchProfile();
-  }, [userId, token]);
+  }, [userId]);
 
-  if (!userId || !token) {
+  if (!userId) {
     return (
       <div style={styles.profileCenteredState}>
         <div>Авторизуйтесь для просмотра профиля</div>

@@ -2,6 +2,7 @@ import { useCallback, useState, useEffect } from "react";
 import type { IUser, IUserRole } from "../context/auth_context";
 import { API_URL } from "../api_key";
 import axios from "axios";
+import { api } from "../api_axios";
 
 interface IUserResponseDTO {
     id: string | number;
@@ -33,78 +34,89 @@ interface IRoleResponseDTO {
     color?: string;
 }
 
-export const useUsers = (userId : number | undefined, token: string | undefined, editorLevel: number | undefined) => {
+const parsedUsers = (u: IUserResponseDTO): IUser => ({
+    id: Number(u.id),
+    first_name: u.first_name,
+    last_name: u.last_name,
+    middle_name: u.middle_name || "",
+    email: u.email,
+    birthday: u.birth_date,
+    username: "",
+    role: {
+        id: Number(u.role_id),
+        permission_level: Number(u.permission_level),
+        name: u.role_name,
+        description: u.role_description,
+        background_color: u.background_color || "#e3e3e3",
+        color: u.color || "#333"
+    },
+    count_tasks: u.stats ? Number(u.stats.in_progress) : 0,
+});
+
+const parsedRoles = (r: IRoleResponseDTO): IUserRole => ({
+    id: Number(r.id),
+    permission_level: Number(r.permission_level),
+    name: r.name,
+    description: r.description,
+    background_color: r.background_color || "#e3e3e3",
+    color: r.color || "#333"
+});
+
+export const useUsers = (userId : number | undefined, editorLevel: number | undefined) => {
     const [allUsers, setAllUsers] = useState<IUser[]>([]);
     const [selectedUser, setSelectedUser] = useState<IUser | null>(null);
     const [availableRoles, setAvailableRoles] = useState<IUserRole[]>([]);
     
-    const fetchAvailableRoles = useCallback(async (editorLevel: number | undefined) => {
-        
-        if (!token || !userId || editorLevel === undefined || editorLevel === null) return;
+    const fetchAvailableRoles = useCallback(async (editorLevel: number | undefined, signal?: AbortSignal) => {
+        if (!userId || editorLevel === undefined || editorLevel === null) return;
         
         try {
-            const { data } = await axios.get(
-                `${API_URL}?endpoint=users&action=get_all_roles&user_id=${userId}&editor_level=${editorLevel}`, 
-                { headers: { 'Authorization': `Bearer ${token}` } }
+            const { data } = await api.get(
+                '',
+                { params: { endpoint: 'users', action: 'get_all_roles', user_id: userId, editor_level: editorLevel }, signal }
             );
-            
-            const parsedRoles = data.map((r: IRoleResponseDTO): IUserRole => ({
-                id: Number(r.id),
-                permission_level: Number(r.permission_level),
-                name: r.name,
-                description: r.description,
-                background_color: r.background_color || "#e3e3e3",
-                color: r.color || "#333"
-            }));
 
-            setAvailableRoles(parsedRoles);
+            setAvailableRoles(data.map(parsedRoles));
         } catch (err) {
+            if(axios.isCancel(err)) return;
             console.error("Ошибка при получении списка ролей", err);
         }
-    }, [token, userId]);
+    }, [userId]);
 
-    const fetchAllUsers = useCallback(async () => {
-        if (!token) return;
+    const fetchAllUsers = useCallback(async (signal?: AbortSignal) => {
+        if (!userId) return;
         try {
-            const { data } = await axios.get<IUserResponseDTO[]>(`${API_URL}?endpoint=users&action=get_all_users&user_id=${userId}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            
-            const parsedUsers = data.map((u: IUserResponseDTO): IUser => ({
-                id: Number(u.id),
-                first_name: u.first_name,
-                last_name: u.last_name,
-                middle_name: u.middle_name || "",
-                email: u.email,
-                token: "", 
-                birthday: u.birth_date,
-                username: "",
-                role: {
-                    id: Number(u.role_id),
-                    permission_level: Number(u.permission_level),
-                    name: u.role_name,
-                    description: u.role_description,
-                    background_color: u.background_color || "#e3e3e3",
-                    color: u.color || "#333"
-                },
-                count_tasks: u.stats ? Number(u.stats.in_progress) : 0,
-                
-            }));
-
-            setAllUsers(parsedUsers);
+            const { data } = await api.get<IUserResponseDTO[]>(
+                '',
+                {signal, params: { endpoint: 'users', action: 'get_all_users', user_id: userId }}
+            );
+            setAllUsers(data.map(u => parsedUsers(u)));
         } catch (err) {
+            if(axios.isCancel(err)) return;
             console.error("Ошибка при получении списка пользователей", err);
         }
-    }, [token, userId]);
+    }, [userId]);
 
     useEffect(() => {
-        if (token) {
-            fetchAvailableRoles(editorLevel);
-            fetchAllUsers();
-        }
-    }, [token, fetchAvailableRoles, fetchAllUsers]);
+        if(!userId) return;
+        
+        const controller = new AbortController();
+        fetchAllUsers(controller.signal);
+        return () => controller.abort();
+
+    }, [fetchAllUsers, userId]);
+
+    useEffect(() => {
+        if(!userId || editorLevel === undefined || editorLevel === null) return;
+        
+        const controller = new AbortController();
+        fetchAvailableRoles(editorLevel, controller.signal);
+        return () => controller.abort();
+
+    }, [fetchAvailableRoles, userId, editorLevel]);
 
     const addNewUser = async (data : IUser, password : string) => {
+        if (!userId) return;
         try {
             const loadUser = {
                 id_role: data.role.id,
@@ -117,8 +129,8 @@ export const useUsers = (userId : number | undefined, token: string | undefined,
                 password: password
             };
 
-            const response = await axios.post(`${API_URL}?endpoint=users&action=add_new_user&user_id=${userId}`, loadUser, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await api.post('', loadUser, {
+                params: { endpoint: 'users', action: 'add_new_user', user_id: userId }
             });
 
             if (response.data && response.data.id) {
@@ -130,7 +142,6 @@ export const useUsers = (userId : number | undefined, token: string | undefined,
                     birthday: data.birthday || "",
                     username: data.username || "",
                     email: data.email,
-                    token: "",
                     role: response.data.role,
                     count_tasks: 0
                 };
@@ -145,6 +156,7 @@ export const useUsers = (userId : number | undefined, token: string | undefined,
     };
 
     const updateUser = async (targetUserId: number, updatedFields: Partial<IUser>) => {
+        if (!userId) return;
         try {
             const currentUserState = allUsers.find(u => u.id === targetUserId);
             if (!currentUserState) return;
@@ -161,8 +173,8 @@ export const useUsers = (userId : number | undefined, token: string | undefined,
                 email: mergedUser.email
             };
 
-            const { data } = await axios.post(`${API_URL}?endpoint=users&action=update_user&user_id=${userId}`, loadUser, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const { data } = await api.put('', loadUser, {
+                params: { endpoint: 'users', action: 'update_user', user_id: userId }
             });
 
             if (data.status === "success") {
@@ -183,11 +195,11 @@ export const useUsers = (userId : number | undefined, token: string | undefined,
     };
 
     const deleteUser = async (targetUserId: number) => {
+        if (!userId) return;
         try {
-            const { data } = await axios.delete(
-                `${API_URL}?endpoint=users&action=delete_user&user_id=${userId}&target_user_id=${targetUserId}`, 
-                { headers: { 'Authorization': `Bearer ${token}` } }
-            );
+            const { data } = await api.delete('', {
+                params: { endpoint: 'users', action: 'delete_user', user_id: userId, target_user_id: targetUserId }
+            });
 
             if (data.status === "success") {
                 setAllUsers(prev => prev.filter(u => u.id !== targetUserId));

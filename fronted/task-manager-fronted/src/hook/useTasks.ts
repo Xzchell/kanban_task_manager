@@ -1,8 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { IExecutors, ITags, ITaskData } from "../components/task_card";
-import axios from "axios";
-import { useAuth, type IUser } from "../context/auth_context";
-import { API_URL } from "../api_key";
+import { api } from "../api_axios";
+import { useAuth } from "../context/auth_context";
 
 export type SortOrder = 'asc' | 'desc' | 'none';
 
@@ -10,19 +9,6 @@ export interface ISortConfig {
     alphabet: SortOrder;
     priority: SortOrder;
     status: SortOrder;
-}
-
-interface IUserResponseDTO {
-    id: string | number;
-    first_name: string;
-    last_name: string;
-    middle_name: string;
-    email: string;
-    role_id: string | number;
-    permission_level: string | number;
-    role_name: string;
-    role_description: string;
-    count_tasks?: number;
 }
 
 export interface ICreateTaskData {
@@ -43,7 +29,7 @@ const initialSortConfig: ISortConfig = {
     status: 'none'
 };
 
-export const useTask = (userId : number | undefined, token: string | undefined) => {
+export const useTask = (userId : number | undefined) => {
 
     const user = useAuth().user;
 
@@ -95,12 +81,16 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
     return result;
     }, [searchQuery, tasks, sortConfig]);
 
-    const fetchTasks = useCallback(async () => {
-        if (!userId || !token) return;
+        const fetchTasks = useCallback(async () => {
+        if (!userId) return;
         setLoading(true);
         try {
-            const { data } = await axios.get(`${API_URL}?endpoint=tasks&action=get_tasks&user_id=${userId}`, {
-                headers: { 'Authorization': `Bearer ${token}` } 
+            const { data } = await api.get('', {
+                params: {
+                    endpoint: 'tasks',
+                    action: 'get_tasks',
+                    user_id: userId
+                }
             });
             const processed = data.map(formattedTasks);
             setTasks(processed);
@@ -111,7 +101,7 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
         } finally {
             setLoading(false);
         }
-    }, [userId, token]);
+    }, [userId]);
 
     const updateTaskStatus = async (taskId: number, newStatus: number) => {
         const previousTasks = [...tasks];
@@ -129,9 +119,9 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
             setSelectedTask(prev => prev ? { ...prev, status: newStatus } : null);
 
         try {
-            await axios.post(`${API_URL}?endpoint=tasks&action=update_status&user_id=${userId}`, 
+            await api.post('', 
                 { id: taskId, status: newStatus },
-                { headers: { 'Authorization': `Bearer ${token}` } }
+                { params: { endpoint: 'tasks', action: 'update_status', user_id: userId } }
             );
         } catch (err) {
             console.error("Ошибка при сохранении", err);
@@ -151,12 +141,12 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
             setSelectedTask(prev => prev ? { ...prev, ...data } : null);
         }
         try {
-            await axios.post(`${API_URL}?endpoint=tasks&action=update_task&user_id=${userId}`, 
+            await api.post('', 
                 { 
                     ...data,
                     id: taskId
                 },
-                { headers: { 'Authorization': `Bearer ${token}` } }
+                { params: { endpoint: 'tasks', action: 'update_task', user_id: userId } }
             );
         } catch (err) {
             console.error("Ошибка при сохранении", err);
@@ -180,8 +170,8 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
                 executors: data.executors ? data.executors.map(executor => Number(executor.id)) : [],          
             };
 
-            const response = await axios.post(`${API_URL}?endpoint=tasks&action=create_task&user_id=${userId}`, loadTask, {
-                headers: { 'Authorization': `Bearer ${token}` }
+            const response = await api.post('', loadTask, {
+                params: { endpoint: 'tasks', action: 'create_task', user_id: userId }
             });
 
             if (response.data && response.data.id) {
@@ -222,74 +212,15 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
 
     const deleteTask = async (taskId: number) => {
         try {
-            await axios.post(`${API_URL}?endpoint=tasks&action=delete_task&user_id=${userId}`, 
-            { id: taskId }
-            , { headers: { 'Authorization': `Bearer ${token}`}});
+            await api.post('', 
+            { id: taskId },
+            { params: { endpoint: 'tasks', action: 'delete_task', user_id: userId } }
+            );
 
             setTasks(prev => prev.filter(t => t.id !== taskId));
         } catch (err) {
             console.error("Ошибка при удалении", err);
         }
-    };
-
-    const useAllTags = () => {
-        const [allTags, setAllTags] = useState<ITags[]>([]);
-
-        const fetchAllTags = useCallback(async () => {
-            if (!token) return;
-            try {
-                const { data } = await axios.get(`${API_URL}?endpoint=tasks&action=get_all_tags&user_id=${userId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const parsedTags = data.map((t: ITags) => ({
-                    id: Number(t.id),
-                    name: t.name,
-                    tag_color: t.tag_color,
-                    background_color: t.background_color
-                }));
-
-                setAllTags(parsedTags);
-            } catch (err) {
-                console.error("Ошибка", err);
-            }
-        }, [token]);
-
-        return { allTags, fetchAllTags };
-    };
-
-    const useAllUsers = () => {
-        const [allUsers, setAllUsers] = useState<IUser[]>([]);
-
-        const fetchAllUsers = useCallback(async () => {
-            if (!token) return;
-            try {
-                const { data } = await axios.get(`${API_URL}?endpoint=users&action=get_all_users&user_id=${userId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const parsedUsers = data.map((u: IUserResponseDTO): IUser => ({
-                    id: Number(u.id),
-                    first_name: u.first_name,
-                    last_name: u.last_name,
-                    middle_name: u.middle_name || "",
-                    email: u.email,
-                    token: "", 
-                    birthday: "",
-                    username: "",
-                    role: {
-                        id: Number(u.role_id),
-                        permission_level: Number(u.permission_level),
-                        name: u.role_name,
-                        description: u.role_description
-                    }
-                }));
-
-                setAllUsers(parsedUsers);
-            } catch (err) {
-                console.error("Ошибка", err);
-            }
-        }, [token]);
-
-        return { allUsers, fetchAllUsers };
     };
 
     return { 
@@ -308,8 +239,6 @@ export const useTask = (userId : number | undefined, token: string | undefined) 
         updateTaskStatus, 
         updateTaskData,
         deleteTask,
-        createTask,
-        useAllTags,
-        useAllUsers
+        createTask
     };
 };

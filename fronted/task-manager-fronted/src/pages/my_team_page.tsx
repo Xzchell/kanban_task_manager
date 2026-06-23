@@ -16,7 +16,7 @@ const TeamPage: React.FC = () => {
         selectedUser, setSelectedUser,
         addNewUser, deleteUser, updateUser,
         availableRoles
-    } = useUsers(user?.id, user?.token, user?.role?.permission_level);
+    } = useUsers(user?.id, user?.role?.permission_level);
     
     const [teamSearch, setTeamSearch] = useState('');
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

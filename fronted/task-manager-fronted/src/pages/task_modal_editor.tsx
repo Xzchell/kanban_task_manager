@@ -16,9 +16,9 @@ export interface ITaskModalEditor {
 
 const TaskModalEditor: React.FC<ITaskModalEditor> = ({task, renderButtons, onSwitchStatus}) => {
     const user = useAuth().user;
-    const {useAllTags} = useTask(user?.id, user?.token);
+    const {useAllTags} = useTask(user?.id);
     const { allTags, fetchAllTags } = useAllTags(); 
-    const {useAllUsers} = useTask(user?.id, user?.token);
+    const {useAllUsers} = useTask(user?.id);
     const { allUsers, fetchAllUsers } = useAllUsers();
 
     const [localTitle, setLocalTitle] = useState(task.title);
