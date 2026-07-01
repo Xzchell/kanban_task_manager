@@ -16,7 +16,8 @@ export interface ITaskData{
     author: IAuthor;
     deadline: string;
     created_at: string;
-    executors?: IExecutors[]
+    executors?: IExecutors[];
+    
 }
 
 export interface IExecutors {

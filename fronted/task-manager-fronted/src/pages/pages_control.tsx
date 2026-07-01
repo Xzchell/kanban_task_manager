@@ -7,6 +7,7 @@ import TeamPage from "./my_team_page";
 import SideBar from "../components/side_bar";
 import { ProfilePage } from "./my_profile_page";
 import LoginRegistrPage from "./login_registr_pages/login_registr_page";
+import BoardsListPage from "./create_board_pages/boards_list_page";
 
 type AuthorizedLayoutProps = {
     children: ReactNode;
@@ -44,7 +45,8 @@ const PagesControl = () => {
                             <Routes location={location} key={location.pathname}>
                                 <Route path="/tasks" element={
                                     <motion.div {...animProps}>
-                                        <TaskList />
+                                        {/*<TaskList />*/}
+                                        <BoardsListPage/>
                                     </motion.div>
                                 } />
                                 <Route path="/team" element={

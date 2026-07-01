@@ -26,7 +26,6 @@ export const AnimatedBackground: React.FC = () => {
             }
             `}
         </style>
--
             <div style={{ ...styles.spot, ...styles.blueSpot }}></div>
             <div style={{ ...styles.spot, ...styles.purpleSpot }}></div>
             <div style={{ ...styles.spot, ...styles.lightBlueSpot }}></div>

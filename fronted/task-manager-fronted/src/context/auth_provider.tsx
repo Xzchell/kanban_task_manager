@@ -57,11 +57,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 navigate('/tasks');
                 return { success: true };
             } else {
-                return { success: false, message: data.message };
+                console.log(data.need_verif); 
+                return { success: false, message: data.message, need_verif: data.need_verif};
             }
             } catch (error: any) {
                 if (error.response && error.response.data) {
-                    return { success: false, message: error.response.data.message };
+                    return { success: false, message: error.response.data.message, need_verif: !!error.response.data.need_verif };
                 }
                 return { success: false, message: "Ошибка сервера" };
             }
@@ -147,9 +148,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
                 localStorage.setItem('user', JSON.stringify(userData));
                 setIsAuth(true);
                 
-                navigate('/tasks');
-                return { success: true };
+                navigate('/tasks'); 
+                return { success: true};
             } else {
+                console.log(data.message);
                 return { success: false, message: data.message };
             }
         } catch (error: any) {

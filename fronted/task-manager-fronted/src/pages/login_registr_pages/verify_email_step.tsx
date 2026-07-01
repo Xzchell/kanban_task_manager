@@ -7,7 +7,7 @@ import { useAuth } from "../../context/auth_context";
 
 interface VerifyEmailStepProps {
   email: string;
-  onVerified: (code: string) => void;
+  onVerified: () => void;
   onBack: () => void;
   serverError?: string | null;
 }
@@ -37,20 +37,20 @@ export const VerifyEmailStep: React.FC<VerifyEmailStepProps> = ({ email, onVerif
         setOtpError(false);
 
         if (auth && auth.verifyRegisterCode) {
-        const result = await auth.verifyRegisterCode(email, otpString);
-        
-        if (result.success) {
-            onVerified(otpString);
+          const result = await auth.verifyRegisterCode(email, otpString);
+          
+          if (result.success) {
+              onVerified();
+          } else {
+              setOtpError(true);
+              setOtpShake(true);
+              setBackendError(result.message || "Неверный код подтверждения");
+              
+              setTimeout(() => setOtpShake(false), 500);
+              setOtpString(""); 
+          }
         } else {
-            setOtpError(true);
-            setOtpShake(true);
-            setBackendError(result.message || "Неверный код подтверждения");
-            
-            setTimeout(() => setOtpShake(false), 500);
-            setOtpString(""); 
-        }
-        } else {
-        setBackendError("Критическая ошибка: Контекст авторизации не найден");
+          setBackendError("Критическая ошибка: Контекст авторизации не найден");
         }
 
         setIsLoading(false);

@@ -7,6 +7,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
+
 class AuthService{
     private $pdo; 
 
@@ -26,7 +27,8 @@ class AuthService{
                     u.id, u.first_name, u.last_name, u.middle_name, 
                     u.birth_date as birthday, u.username, u.email, u.password as password_hash,
                     r.id as role_id, r.permission_level, r.display_name as role_name, 
-                    r.description as role_description, r.background_color, r.text_color
+                    r.description as role_description, r.background_color, r.text_color,
+                    u.is_verified
                 FROM users u 
                 LEFT JOIN roles r ON u.id_role = r.id 
                 WHERE u.email = ? OR u.username = ?"; 
@@ -36,6 +38,13 @@ class AuthService{
         $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($userRow && password_verify($password, $userRow['password_hash'])) {
+
+            if ((int)$userRow['is_verified'] === 0) {
+                http_response_code(403);
+                echo json_encode(["success" => false, "message" => "Пожалуйста, подтвердите вашу почту перед входом", "need_verif" => true], JSON_UNESCAPED_UNICODE);
+                return;
+            }
+
             $token = bin2hex(random_bytes(32));
             $stmt = $this->pdo->prepare("INSERT INTO user_sessions (user_id, token) VALUES (?, ?)");
             $stmt->execute([$userRow['id'], $token]);
@@ -90,7 +99,8 @@ class AuthService{
             echo json_encode(["success" => false, "message" => "Заполните все поля"], JSON_UNESCAPED_UNICODE);
             return;
         }
-
+        
+        /* проверка на сущ пользователя */
         $checkSql = "SELECT id FROM users WHERE email = ? OR username = ?";
         $stmt = $this->pdo->prepare($checkSql);
         $stmt->execute([$email, $username]);
@@ -103,18 +113,12 @@ class AuthService{
 
         $formattedBirthDate = null;
         $dateParts = explode('.', $birthDate);
-        if (count($dateParts) === 3) {
-            $formattedBirthDate = $dateParts[2] . '-' . $dateParts[1] . '-' . $dateParts[0];
-        } else {
-            http_response_code(400);
-            echo json_encode(["success" => false, "message" => "Неверный формат даты"], JSON_UNESCAPED_UNICODE);
-            return;
-        }
+        $formattedBirthDate = $dateParts[2] . '-' . $dateParts[1] . '-' . $dateParts[0];
 
         $passwordHash = password_hash($password, PASSWORD_BCRYPT);
         $verificationCode = rand(100000, 999999);
 
-        $sql = "CALL create_user_account(?, ?, ?, ?, ?, ?)";
+        $sql = "CALL create_user_account(?, ?, ?, ?, ?)";
         $insertStmt = $this->pdo->prepare($sql);
 
         $insertStmt->execute([
@@ -123,9 +127,18 @@ class AuthService{
             $passwordHash,
             $fullName,
             $formattedBirthDate,
-            $verificationCode
         ]);
-        $isSent = $this->sendEmailNotification($email, $fullName, $verificationCode);
+
+        $userStmt = $this->pdo->prepare("SELECT id FROM users WHERE email = ?");
+        $userStmt->execute([$email]);
+        $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
+        $userId = $userRow['id'];
+
+        $expiresAt = date('Y-m-d H:i:s', time() + 900);
+        $codeStmt = $this->pdo->prepare("INSERT INTO email_verifications (user_id, code, expires_at) VALUES (?, ?, ?)");
+        $codeStmt->execute([$userId, $verificationCode, $expiresAt]);
+        
+        $this->sendEmailNotification($email, $fullName, $verificationCode);
     
         echo json_encode([
             "success" => true,
@@ -157,17 +170,18 @@ class AuthService{
         }
 
         $newVerificationCode = rand(100000, 999999);
+        $expiresAt = date('Y-m-d H:i:s', time() + 900);
 
-        $updateSql = "UPDATE users SET verification_code = ? WHERE id = ?";
+        $updateSql = "INSERT INTO email_verifications (user_id, code, expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE code = VALUES(code), expires_at = VALUES(expires_at)";
         $updateStmt = $this->pdo->prepare($updateSql);
-        $updateStmt->execute([$newVerificationCode, $userRow['id']]);
+        $updateStmt->execute([$userRow['id'], $newVerificationCode, $expiresAt]);
 
         $fullName = trim(($userRow['last_name'] ?? '') . ' ' . ($userRow['first_name'] ?? '') . ' ' . ($userRow['middle_name'] ?? ''));
-        if (empty($fullName)) {
+        
+        if (empty($fullName))
             $fullName = "Пользователь";
-        }
 
-        $isSent = $this->sendEmailNotification($email, $fullName, $newVerificationCode);
+        $this->sendEmailNotification($email, $fullName, $newVerificationCode);
 
         echo json_encode([
             "success" => true,
@@ -183,13 +197,14 @@ class AuthService{
             $mail->Host       = 'smtp.yandex.ru';
             $mail->SMTPAuth   = true;                         
             $mail->Username   = 'xzchellnon@yandex.ru';
-            $mail->Password   = 'passs'; 
+            $mail->Password   = 'ynoerqllkrpxxcso'; 
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;   
             $mail->Port       = 465;                          
             $mail->CharSet    = 'UTF-8';                      
 
             $mail->setFrom('xzchellnon@yandex.ru', 'Kanban Task');
             $mail->addAddress($email, $fullName);             
+            $mail->addReplyTo('xzchellnon@yandex.ru', 'Поддержка');
 
             $mail->XMailer = 'PHP/KanbanMailer'; 
             $mail->addCustomHeader('List-Unsubscribe', '<mailto:xzchellnon@yandex.ru?subject=unsubscribe>');
@@ -219,6 +234,7 @@ class AuthService{
             return false;
         }
     }
+
     public function verifyCode($email, $code) {
         if (empty($email) || empty($code)) {
             http_response_code(400);
@@ -226,36 +242,81 @@ class AuthService{
             return;
         }
 
-        $sql = "SELECT id, first_name, last_name, middle_name, birth_date as birthday, username, email, is_verified 
-                FROM users 
-                WHERE email = ? AND verification_code = ?";
-
-        $stmt = $this->pdo->prepare($sql);
-        $stmt->execute([$email, $code]);
-        $userRow = $stmt->fetch(PDO::FETCH_ASSOC);
+        $userSql = "SELECT id, is_verified FROM users WHERE email = ?";
+        $userStmt = $this->pdo->prepare($userSql);
+        $userStmt->execute([$email]);
+        $userRow = $userStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$userRow) {
             http_response_code(401);
-            echo json_encode(["success" => false, "message" => "Неверный код подтверждения или Email"], JSON_UNESCAPED_UNICODE);
+            echo json_encode(["success" => false, "message" => "Пользователь с таким Email не найден"], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $updateSql = "UPDATE users SET is_verified = 1, verification_code = NULL WHERE id = ?";
-        $updateStmt = $this->pdo->prepare($updateSql);
-        $updateStmt->execute([$userRow['id']]);
+        if ((int)$userRow['is_verified'] === 1) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Этот аккаунт уже верифицирован"], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $userId = $userRow['id'];
+
+        $codeSql = "SELECT code, expires_at FROM email_verifications WHERE user_id = ?";
+        $codeStmt = $this->pdo->prepare($codeSql);
+        $codeStmt->execute([$userId]);
+        $verification = $codeStmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$verification) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Код подтверждения не запрашивался или устарел"], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if ($verification['code'] !== (string)$code) {
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Неверный код подтверждения"], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if (strtotime($verification['expires_at']) < time()) {
+
+            $deleteCodeStmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?");
+            $deleteCodeStmt->execute([$userId]);
+
+            http_response_code(401);
+            echo json_encode(["success" => false, "message" => "Срок действия кода истек. Запросите новый код."], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $this->pdo->beginTransaction();
+
+        $updateUserStmt = $this->pdo->prepare("UPDATE users SET is_verified = 1 WHERE id = ?");
+        $updateUserStmt->execute([$userId]);
+
+        $deleteCodeStmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?");
+        $deleteCodeStmt->execute([$userId]);
 
         $token = bin2hex(random_bytes(32));
+        
         $sessionStmt = $this->pdo->prepare("INSERT INTO user_sessions (user_id, token) VALUES (?, ?)");
-        $sessionStmt->execute([$userRow['id'], $token]);
+        $sessionStmt->execute([$userId, $token]);
+
+        $this->pdo->commit();
+
+        $fullDataSql = "SELECT u.id, u.first_name, u.last_name, u.middle_name, u.birth_date as birthday, u.username, u.email FROM users u WHERE u.id = ?";
+        
+        $dataStmt = $this->pdo->prepare($fullDataSql);
+        $dataStmt->execute([$userId]);
+        $fullUser = $dataStmt->fetch(PDO::FETCH_ASSOC);
 
         $userData = [
-            "id" => (int)$userRow['id'],
-            "first_name" => $userRow['first_name'] ?? '',
-            "last_name" => $userRow['last_name'] ?? '',
-            "middle_name" => $userRow['middle_name'] ?? '',
-            "birthday" => $userRow['birthday'] ?? '',
-            "username" => $userRow['username'],
-            "email" => $userRow['email'],
+            "id" => (int)$fullUser['id'],
+            "first_name" => $fullUser['first_name'] ?? '',
+            "last_name" => $fullUser['last_name'] ?? '',
+            "middle_name" => $fullUser['middle_name'] ?? '',
+            "birthday" => $fullUser['birthday'] ?? '',
+            "username" => $fullUser['username'],
+            "email" => $fullUser['email'],
             "role" => null
         ];
 
@@ -307,8 +368,8 @@ function authActions($pdo, $action) {
     try {
         switch($action){
             case 'login':
-                $email = $inputData['login'] ?? [];
-                $password = $inputData['password'] ?? [];
+                $email = $inputData['login'] ?? '';
+                $password = $inputData['password'] ?? '';
 
                 $authService->login($email, $password);
                 break;

@@ -25,7 +25,7 @@ export interface IUserRole{
 export interface IAuthContextType {
     user: IUser | null;
     isAuth: boolean;
-    login: (loginStr: string, passwordStr: string) => Promise<{ success: boolean; message?: string }>;
+    login: (loginStr: string, passwordStr: string) => Promise<{ success: boolean; message?: string, need_verif?: boolean }>;
     logout: () => void;
     register: (userData : IUserData) => Promise<{ success: boolean; message?: string }>;
     verifyRegisterCode: (email: string, code: string) => Promise<{ success: boolean; message?: string }>; 

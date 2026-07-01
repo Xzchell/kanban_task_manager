@@ -4,9 +4,10 @@ import type { IExecutors, ITags, ITaskData } from "../components/task_card";
 import RichTextEditor from "../components/rich_text_editor";
 import PriorityTaskContainer from "../components/priority_task_container";
 import TagSelector from "../components/tag_selector";
-import { useTask } from "../hook/useTasks";
 import { useAuth} from "../context/auth_context";
 import UserSelector from "../components/user_selector";
+import { useTags } from "../hook/useTags";
+import { useUsers } from "../hook/useUsers";
 
 export interface ITaskModalEditor {
     task : ITaskData,
@@ -16,10 +17,8 @@ export interface ITaskModalEditor {
 
 const TaskModalEditor: React.FC<ITaskModalEditor> = ({task, renderButtons, onSwitchStatus}) => {
     const user = useAuth().user;
-    const {useAllTags} = useTask(user?.id);
-    const { allTags, fetchAllTags } = useAllTags(); 
-    const {useAllUsers} = useTask(user?.id);
-    const { allUsers, fetchAllUsers } = useAllUsers();
+    const { allTags, fetchAllTags } = useTags(user?.id);
+    const { allUsers, fetchAllUsers } = useUsers(user?.id, user?.role.permission_level);
 
     const [localTitle, setLocalTitle] = useState(task.title);
     const [localDeadline, setLocalDeadLine] = useState(task.deadline.split(' ')[0]);

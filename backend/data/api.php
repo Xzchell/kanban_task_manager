@@ -5,6 +5,7 @@ require_once 'auth_checker.php';
 
 require_once 'controllers/TaskController.php';
 require_once 'controllers/UserController.php';
+require_once 'controllers/BoardController.php';
 require_once 'AuthService.php';
 
 $endpoint = $_GET['endpoint'] ?? '';
@@ -26,6 +27,7 @@ try{
     switch ($endpoint) {
     case 'tasks': taskActions($pdo, $action, $userId); break;
     case 'users': userActions($pdo, $action, $userId); break;
+    case 'boards': boardActions($pdo, $action, $userId); break;
     case 'auth': authActions($pdo, $action); break;
     default:
         http_response_code(404);

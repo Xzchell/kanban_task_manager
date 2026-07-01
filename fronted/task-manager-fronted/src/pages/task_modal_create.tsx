@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import DefaultButton from "../components/default_button";
 import { useAuth } from "../context/auth_context";
-import { useTask, type ICreateTaskData } from "../hook/useTasks";
+import { type ICreateTaskData } from "../hook/useTasks";
 import { motion } from "framer-motion";
 import PriorityTaskContainer from "../components/priority_task_container";
 import RichTextEditor from "../components/rich_text_editor";
@@ -9,6 +9,8 @@ import { useAlert } from '../context/alert_context';
 import TagSelector from "../components/tag_selector";
 import type { IExecutors, ITags } from "../components/task_card";
 import UserSelector from "../components/user_selector";
+import { useTags } from "../hook/useTags";
+import { useUsers } from "../hook/useUsers";
 
 export interface ITaskModalCreate {
     onClose: () => void;
@@ -18,11 +20,8 @@ export interface ITaskModalCreate {
 const TaskModalCreate: React.FC<ITaskModalCreate> = ({ onClose, onCreate }) => {
     const user = useAuth().user;
     
-    const {useAllTags} = useTask(user?.id, user?.token);
-    const { allTags, fetchAllTags } = useAllTags();    
-
-    const {useAllUsers} = useTask(user?.id, user?.token);
-    const { allUsers, fetchAllUsers } = useAllUsers();
+    const { allTags, fetchAllTags } = useTags(user?.id); 
+    const { allUsers, fetchAllUsers } = useUsers(user?.id, user?.role.permission_level);
 
     const [title, setTitle] = useState("");
     const [shortDesc, setShortDesc] = useState("");

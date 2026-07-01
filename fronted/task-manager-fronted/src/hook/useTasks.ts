@@ -81,15 +81,15 @@ export const useTask = (userId : number | undefined) => {
     return result;
     }, [searchQuery, tasks, sortConfig]);
 
-        const fetchTasks = useCallback(async () => {
-        if (!userId) return;
+    const fetchTasks = useCallback(async () => {
+        if (!user?.id) return;
         setLoading(true);
         try {
             const { data } = await api.get('', {
                 params: {
                     endpoint: 'tasks',
                     action: 'get_tasks',
-                    user_id: userId
+                    user_id: user.id
                 }
             });
             const processed = data.map(formattedTasks);
@@ -101,7 +101,7 @@ export const useTask = (userId : number | undefined) => {
         } finally {
             setLoading(false);
         }
-    }, [userId]);
+    }, [user?.id]);
 
     const updateTaskStatus = async (taskId: number, newStatus: number) => {
         const previousTasks = [...tasks];
@@ -121,7 +121,7 @@ export const useTask = (userId : number | undefined) => {
         try {
             await api.post('', 
                 { id: taskId, status: newStatus },
-                { params: { endpoint: 'tasks', action: 'update_status', user_id: userId } }
+                { params: { endpoint: 'tasks', action: 'update_status', user_id: user?.id } }
             );
         } catch (err) {
             console.error("Ошибка при сохранении", err);
@@ -146,7 +146,7 @@ export const useTask = (userId : number | undefined) => {
                     ...data,
                     id: taskId
                 },
-                { params: { endpoint: 'tasks', action: 'update_task', user_id: userId } }
+                { params: { endpoint: 'tasks', action: 'update_task', user_id: user?.id } }
             );
         } catch (err) {
             console.error("Ошибка при сохранении", err);
@@ -165,13 +165,13 @@ export const useTask = (userId : number | undefined) => {
                 priority: data.priority || 1,
                 status: data.status || 1,
                 deadline: (data.deadline || new Date().toISOString()).slice(0, 19).replace('T', ' '),
-                author_id: Number(data.author_id || userId),
+                author_id: Number(data.author_id || user?.id),
                 tags: data.tags ? data.tags.map(tag => Number(tag.id)) : [],   
                 executors: data.executors ? data.executors.map(executor => Number(executor.id)) : [],          
             };
 
             const response = await api.post('', loadTask, {
-                params: { endpoint: 'tasks', action: 'create_task', user_id: userId }
+                params: { endpoint: 'tasks', action: 'create_task', user_id: user?.id }
             });
 
             if (response.data && response.data.id) {
@@ -180,7 +180,7 @@ export const useTask = (userId : number | undefined) => {
                     id: response.data.id,
                     status: Number(loadTask.status),
                     author: {
-                        id: Number(data.author_id || userId),
+                        id: Number(data.author_id || user?.id),
                         first_name: user?.first_name || "",
                         last_name: user?.last_name || "",
                         middle_name: user?.middle_name || ""
@@ -188,7 +188,7 @@ export const useTask = (userId : number | undefined) => {
                     executors: [
                         ...(data.executors || []),
                         {
-                            id: Number(data.author_id || userId),
+                            id: Number(data.author_id || user?.id),
                             first_name: user?.first_name || "",
                             last_name: user?.last_name || "",
                             middle_name: user?.middle_name || "",
@@ -214,7 +214,7 @@ export const useTask = (userId : number | undefined) => {
         try {
             await api.post('', 
             { id: taskId },
-            { params: { endpoint: 'tasks', action: 'delete_task', user_id: userId } }
+            { params: { endpoint: 'tasks', action: 'delete_task', user_id: user?.id } }
             );
 
             setTasks(prev => prev.filter(t => t.id !== taskId));

@@ -1,6 +1,5 @@
 import { useCallback, useState, useEffect } from "react";
 import type { IUser, IUserRole } from "../context/auth_context";
-import { API_URL } from "../api_key";
 import axios from "axios";
 import { api } from "../api_axios";
 
@@ -214,13 +213,13 @@ export const useUsers = (userId : number | undefined, editorLevel: number | unde
 
     return { 
         allUsers, 
-        fetchAllUsers, 
+        availableRoles,
         selectedUser, 
+        fetchAllUsers, 
         setSelectedUser, 
         addNewUser, 
         updateUser, 
         deleteUser,
-        availableRoles,
         fetchAvailableRoles
     };
 };

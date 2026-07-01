@@ -19,6 +19,8 @@ const LoginRegistrPage: React.FC = () => {
     const [isVerifyStatus, setVerifyStatus] = useState(false);
     const [verifyEmail, setVerifyEmail] = useState("");
 
+    const auth = useAuth();
+
     const toggleConfig = [
         {
             id: "login",
@@ -43,7 +45,14 @@ const LoginRegistrPage: React.FC = () => {
         const result = await loginAction(email, password);
 
         if (!result.success) {
-            setMessage(result.message || "Произошла ошибка при входе.");
+            if(result.need_verif){
+                setIsLogin(false);
+                setVerifyStatus(true);
+                setVerifyEmail(email);
+                auth.resendRegisterCode(email);
+            }
+            else
+                setMessage(result.message || "Произошла ошибка при входе.");
         } else {
             setMessage(null);
         }
