@@ -1,10 +1,10 @@
 import { LogOut } from "lucide-react";
-import { useAuth } from "../context/auth_context";
-import { useNavigate } from "react-router-dom";
-import DefaultButton from "./default_button";
-import type { ISideBarItem } from "./side_bar_item";
+
 import { useState } from "react";
-import SegmentedToggle from "./segmented_toggle";
+import { useAuth } from "../../context/auth_context";
+import { useNavigate } from "react-router-dom";
+import type { ISideBarItem } from "./side_bar_item";
+import DefaultButton from "../default_button";
 
 const SideBar = () => {
     const navigate = useNavigate();

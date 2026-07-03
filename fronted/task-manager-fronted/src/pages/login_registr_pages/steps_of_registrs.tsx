@@ -241,7 +241,6 @@ const StepsRegistr: React.FC<StepsRegistrProps> = ({ onSwitchToLogin, onVerifyEm
                 {registerStep === 3 ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', justifyContent: 'center', flexGrow: 1 }}>
                         <h3 style={styles.title}>Готово!</h3>
-                        <p style={styles.subtitle}>Ваши данные успешно приняты. Регистрация пока недоступна.</p>
                     </div>
                 ) : (
                     <div

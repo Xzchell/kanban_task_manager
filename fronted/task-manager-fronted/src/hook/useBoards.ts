@@ -27,17 +27,29 @@ export interface IBoard {
 export interface IBoardCreate {
     title: string;
     description: string;
-    type_name: string;
+    type_name: BoardTypeKind;
     columns: IColumns[];
-    deadline?: string;
-    invited_users?: IUser[];
+    deadline?: string | null;
+    invited_users?: IInvitedUser[];
 }
 
-interface IColumns {
+export interface IInvitedUser {
+    user_id: number;
+    role_id: number;
+}
+
+export interface IColumns {
     id?: number;
     name: string;
     position: number;
 }
+
+export const TYPE_BOARD = {
+    hakaton: "hakaton",
+    company: "company"
+} as const; 
+
+export type BoardTypeKind = typeof TYPE_BOARD[keyof typeof TYPE_BOARD]
 
 export const useBoard = () => {
     const user = useAuth().user;
@@ -78,7 +90,7 @@ export const useBoard = () => {
                 },
                 { params: { endpoint: 'boards', action: 'create_board', user_id: user?.id } }
             );
-            fetchBoards();
+            await fetchBoards();
             setError(null);
         } catch (err) {
             setError("Ошибка при создании доски");

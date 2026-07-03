@@ -2,13 +2,12 @@ import React, { useState } from "react";
 import { Plus, Layers } from "lucide-react";
 import NeonButton from "../../components/neon_button";
 import CustomModal from "../../components/custom_modal";
-import { AnimatePresence } from "motion/react";
 import { AnimatedBackground } from "../../components/animated_background";
+import { BoardTypeSelector } from "./board_type_selector";
 
-interface EmptyBoardsStateProps {
-  onCreateBoard: () => void;
+interface IEmptyBoardStateProps {
+    onBoardCreated: () => void; 
 }
-
 const FLOAT_CARDS = [
   { label: "Бэклог", count: 4, badgeBg: "#6366f1", badgeText: "#ffffff", top: "12%", left: "8%", rotate: "-6deg", delay: "0s" },
   { label: "В работе", count: 2, badgeBg: "#f59e0b", badgeText: "#ffffff", top: "18%", right: "10%", rotate: "5deg", delay: "0.4s" },
@@ -16,16 +15,8 @@ const FLOAT_CARDS = [
   { label: "Ревью", count: 1, badgeBg: "#8b5cf6", badgeText: "#ffffff", bottom: "16%", right: "8%", rotate: "-4deg", delay: "1.2s" },
 ];
 
-const EmptyBoardsState: React.FC<EmptyBoardsStateProps> = ({ onCreateBoard }) => {
+const EmptyBoardsState: React.FC<IEmptyBoardStateProps> = ({ onBoardCreated }) => {
     const [isModalOpen, setModalOpen] = useState(false);
-    
-    const [title, setTitle] = useState("");
-
-    const handleSave = () => {
-        // Твоя логика отправки на бэкенд: createBoard({ title, ... })
-        setModalOpen(false);
-    };
-
 
     return (
         <div style={styles.container}>
@@ -130,16 +121,14 @@ const EmptyBoardsState: React.FC<EmptyBoardsStateProps> = ({ onCreateBoard }) =>
                 isOpen={isModalOpen} 
                 onClose={() => setModalOpen(false)}
                 width="50vw"
-                height="70vh"
+                height="80vh"
                 children={
-                   <div className="modal-content" style={{ padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}> 
-                        <div className="modal-header" style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px", width: "100%" }}>
-                            <h2 style={{ margin: 0 }}>Новая доска</h2>
-                            <label style={{ color: "#647080" }}>Выберите тип пространства</label>
-                        </div>
-                   </div>
+                    <BoardTypeSelector 
+                        onClose={() => setModalOpen(false)}
+                        onSuccess={onBoardCreated}
+                    />
                 }
-                />
+            />
         
         </div>
     );

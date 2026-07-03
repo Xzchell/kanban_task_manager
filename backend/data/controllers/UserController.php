@@ -26,6 +26,10 @@ function userActions($pdo, $action, $userId) {
             case 'get_profile': 
                 $userController->getProfile($userId); 
                 break;
+            case 'search_user' : 
+                $searchQuery = isset($input["query"]) ? trim($input["query"]) : '';
+                $userController->searchUser($searchQuery); 
+                break;
             default:
                 http_response_code(405);
                 echo json_encode(["error" => "Method not allowed"]);
@@ -44,6 +48,34 @@ class UserController {
 
     public function __construct($pdo) {
         $this->pdo = $pdo;
+    }
+
+    public function searchUser(string $searchQuery){
+        $searchQuery = trim($searchQuery);
+
+        if (strlen($searchQuery) < 3) return;
+
+        try{
+            $sql = "SELECT id, username, email 
+                FROM users 
+                WHERE email = :query OR username = :query 
+                LIMIT 1";
+
+            $stmt = $this->pdo->prepare($sql);
+
+            $stmt->execute([':query' => $searchQuery]);
+            
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            echo json_encode([
+                "success" => true,
+                "user" => $user ? [$user] : []
+            ], JSON_UNESCAPED_UNICODE);
+        }
+        catch (PDOException $e){
+            http_response_code(500);
+            echo json_encode(["error" => "Ошибка при поиске участника: " . $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
     }
 
     public function addNewUser($input) {

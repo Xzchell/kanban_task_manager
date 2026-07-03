@@ -33,6 +33,12 @@ interface IRoleResponseDTO {
     color?: string;
 }
 
+export interface ISearchedUser {
+    id: number;
+    username: string;
+    email: string;
+}
+
 const parsedUsers = (u: IUserResponseDTO): IUser => ({
     id: Number(u.id),
     first_name: u.first_name,
@@ -113,6 +119,31 @@ export const useUsers = (userId : number | undefined, editorLevel: number | unde
         return () => controller.abort();
 
     }, [fetchAvailableRoles, userId, editorLevel]);
+
+    const searchUser = async(username: string): Promise<ISearchedUser[]> => {
+        if (!userId) return [];
+        try{
+            const response = await api.post('', {query: username}, {
+                params: { endpoint: 'users', action: 'search_user', user_id: userId }
+            });
+
+            if (response.data.success && Array.isArray(response.data.user)){
+                return response.data.user;
+            }
+            else return [];
+        }
+        catch (err) {
+            console.error("Ошибка поиска пользователя", err);
+            return [];
+        }
+    }
+
+
+
+
+
+
+    //Ниже код не нужен
 
     const addNewUser = async (data : IUser, password : string) => {
         if (!userId) return;
@@ -220,6 +251,7 @@ export const useUsers = (userId : number | undefined, editorLevel: number | unde
         addNewUser, 
         updateUser, 
         deleteUser,
-        fetchAvailableRoles
+        fetchAvailableRoles,
+        searchUser
     };
 };

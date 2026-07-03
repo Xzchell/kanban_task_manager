@@ -4,7 +4,7 @@ import { EyeIcon, EyeOff } from "lucide-react";
 export interface FormInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
     id: string;
     label: string;
-    type: "text" | "email" | "password";
+    type: "text" | "email" | "password" | "date-time" | "date-only";
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
@@ -63,21 +63,17 @@ const defaultStyles = {
     },
 };
 
-const FormInput: React.FC<FormInputProps> = ({
-    id,
-    label,
-    type,
-    value,
-    onChange,
-    placeholder,
-    helperText,
-    containerStyle,
-    labelStyle,
-    inputStyle,
-    ...inputProps
-}) => {
+const FormInput: React.FC<FormInputProps> = ({ id, label, type, value, onChange, placeholder, helperText, containerStyle, labelStyle, inputStyle, ...inputProps }) => {
     const [showPassword, setShowPassword] = useState(false);
-    const actualType = type === "password" ? (showPassword ? "text" : "password") : type;
+    
+    const isPassword = type === "password";
+    const actualType = isPassword ? (showPassword ? "text" : "password") : "text";
+
+    const combinedInputStyle = {
+        ...defaultStyles.input,
+        paddingRight: isPassword ? "44px" : "18px",
+        ...inputStyle
+    };
 
     return (
         <div style={{ ...defaultStyles.container, ...containerStyle }}>
@@ -91,10 +87,10 @@ const FormInput: React.FC<FormInputProps> = ({
                     value={value}
                     onChange={(e) => onChange(e.target.value)}
                     placeholder={placeholder}
-                    style={{ ...defaultStyles.input, ...inputStyle }}
+                    style={combinedInputStyle}
                     {...inputProps}
                 />
-                {type === "password" && (
+                {isPassword && (
                     <button
                         type="button"
                         onClick={() => setShowPassword((prev) => !prev)}

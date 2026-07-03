@@ -1,13 +1,12 @@
 import type { ReactNode } from "react";
-import TaskList from "./table_tasks_page";
 import { useAuth } from "../context/auth_context";
 import { motion, AnimatePresence, easeInOut } from "framer-motion";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import TeamPage from "./my_team_page";
-import SideBar from "../components/side_bar";
 import { ProfilePage } from "./my_profile_page";
 import LoginRegistrPage from "./login_registr_pages/login_registr_page";
 import BoardsListPage from "./create_board_pages/boards_list_page";
+import FloatingSidebar from "../components/sidebar/floating_sidebar";
 
 type AuthorizedLayoutProps = {
     children: ReactNode;
@@ -16,7 +15,7 @@ type AuthorizedLayoutProps = {
 const AuthorizedLayout = ({ children }: AuthorizedLayoutProps) => {
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
-            <SideBar />
+            <FloatingSidebar/>
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {children}
             </div>
@@ -43,7 +42,7 @@ const PagesControl = () => {
                     <AuthorizedLayout key="auth-zone">
                         <AnimatePresence mode="wait">
                             <Routes location={location} key={location.pathname}>
-                                <Route path="/tasks" element={
+                                <Route path="/boards" element={
                                     <motion.div {...animProps}>
                                         {/*<TaskList />*/}
                                         <BoardsListPage/>
@@ -59,7 +58,7 @@ const PagesControl = () => {
                                         <ProfilePage />
                                     </motion.div>
                                 } />
-                                <Route path="*" element={<Navigate to="/tasks" />} />
+                                <Route path="*" element={<Navigate to="/boards" />} />
                             </Routes>
                         </AnimatePresence>
                     </AuthorizedLayout>

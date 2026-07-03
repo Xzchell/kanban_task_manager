@@ -34,8 +34,17 @@ class BoardController {
             $title = trim($inputData['title']);
             $description = $inputData['description'] ?? null;
             $typeName = $inputData['type_name'];
-            $deadline = ($typeName === 'hakaton' && !empty($inputData['deadline'])) ? $inputData['deadline'] : null;
-            
+
+            $deadline = null;
+            if ($typeName === 'hakaton' && !empty($inputData['deadline'])) {
+                try {
+                    $date = new DateTime($inputData['deadline']);
+                    $deadline = $date->format('Y-m-d H:i:s');
+                } catch (Exception $e) {
+                    $deadline = null; 
+                }
+            }
+
             $invitedUsers = $inputData['invited_users'] ?? [];
             $invitedJsonString = json_encode($invitedUsers);
 
