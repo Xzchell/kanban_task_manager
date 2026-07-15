@@ -4,6 +4,8 @@ import { RefreshCw, Mail } from "lucide-react";
 import { OTPInput, REGEXP_ONLY_DIGITS } from "input-otp";
 import DefaultButton from "../../components/default_button";
 import { useAuth } from "../../context/auth_context";
+import { theme } from "../../themes/themes";
+import { useDesignMode } from "../../context/design_context";
 
 interface VerifyEmailStepProps {
   email: string;
@@ -22,6 +24,8 @@ export const VerifyEmailStep: React.FC<VerifyEmailStepProps> = ({ email, onVerif
 
     const [isLoading, setIsLoading] = useState(false);
     const [backendError, setBackendError] = useState<string | null>(null);
+
+    const { mode } = useDesignMode();
 
     useEffect(() => {
         if (resendCooldown <= 0) return;
@@ -66,113 +70,119 @@ export const VerifyEmailStep: React.FC<VerifyEmailStepProps> = ({ email, onVerif
     const otpComplete = otpString.length === 6;
     const displayError = serverError || backendError || (otpError ? "Неверный код подтверждения" : null);
 
-return (
-    <motion.div
-      key="otp"
-      initial={{ opacity: 0, scale: 1 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 1 }}
-      transition={{ duration: 0.25 }}
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100%',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={styles.content}>
-        <div style={styles.iconWrapper}>
-          <Mail size={32} color="#0d6fff" />
-        </div>
+    const activeDesign = theme.modes[mode];
 
-        <div style={styles.textContainer}>
-          <h3 style={styles.title}>Подтвердите почту</h3>
-          <p style={styles.subtitle}>
-            Мы отправили код на <span style={styles.emailHighlight}>{email || "ваш email"}</span>
-          </p>
-        </div>
-<div style={{ flexGrow: 1 }} />
+    return (
         <motion.div
-            animate={otpShake ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : { x: 0 }}
-            transition={{ duration: 0.45 }}
-          >
-            <OTPInput
-                pattern={REGEXP_ONLY_DIGITS}
-                maxLength={6}
-                value={otpString}
-                onChange={(val) => {
-                setOtpString(val);
-                setOtpError(false);
-                setBackendError(null);
-            }}
-            autoFocus
-            type="text"
-            inputMode="numeric"
-            disabled={isLoading}
-            render={({ slots }) => (
-            <div style={styles.otpRow}>
-                {slots.map((slot, idx) => {
-                    let currentSlotStyle = { ...styles.otpInput };
-                    if (slot.char) currentSlotStyle = { ...currentSlotStyle, ...styles.otpInputActive };
-                    if (slot.isActive) currentSlotStyle = { ...currentSlotStyle, ...styles.otpInputFocused };
-                    if (displayError) currentSlotStyle = { ...currentSlotStyle, ...styles.otpInputError };
+          key="otp"
+          initial={{ opacity: 0, scale: 1 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1 }}
+          transition={{ duration: 0.25 }}
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            height: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
+          <div style={styles.content}>
+            <div style={styles.iconWrapper}>
+              <Mail size={32} color="#0d6fff" />
+            </div>
 
-                    return (
-                    <div key={idx} style={currentSlotStyle}>
-                        {slot.char}
-                        {slot.hasFakeCaret && <div style={styles.fakeCaret} />}
-                    </div>
-                    );
-                })}
-                </div>
-            )}
-            />
-        </motion.div>
-
-        <AnimatePresence>
-            {displayError && (
-            <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -6 }}
-                style={styles.messageError}
-            >
-                {displayError}
-            </motion.div>
-            )}
-        </AnimatePresence>
-        <DefaultButton
-            text={isLoading ? "Проверка..." : "Подтвердить"}
-            status="primary"
-            fullWidth={true}
-            br="18px"
-            onClick={handleVerify}
-            disabled={!otpComplete || isLoading}
-        />
+            <div style={styles.textContainer}>
+              <h3 style={styles.title}>Подтвердите почту</h3>
+              <p style={styles.subtitle}>
+                Мы отправили код на <span style={styles.emailHighlight}>{email || "ваш email"}</span>
+              </p>
+            </div>
             <div style={{ flexGrow: 1 }} />
-        <div style={styles.bottomRow}>
-            {resendCooldown > 0 ? (
-            <span>
-                Отправить повторно через <span style={styles.cooldownText}>{resendCooldown}с</span>
-            </span>
-            ) : (
-            <button type="button" onClick={handleResend} style={styles.resendLink}>
-                <RefreshCw size={12} style={{ marginRight: '4px' }} />
-                Отправить повторно
-            </button>
-            )}
-        </div>
+            <motion.div
+                animate={otpShake ? { x: [0, -10, 10, -8, 8, -4, 4, 0] } : { x: 0 }}
+                transition={{ duration: 0.45 }}
+              >
+                <OTPInput
+                    pattern={REGEXP_ONLY_DIGITS}
+                    maxLength={6}
+                    value={otpString}
+                    onChange={(val) => {
+                    setOtpString(val);
+                    setOtpError(false);
+                    setBackendError(null);
+                }}
+                autoFocus
+                type="text"
+                inputMode="numeric"
+                disabled={isLoading}
+                render={({ slots }) => (
+                <div style={styles.otpRow}>
+                    {slots.map((slot, idx) => {
+                        let currentSlotStyle = { 
+                            ...styles.otpInput,
+                            ...theme.modes[mode].otpBase
+                        };
+                        
+                        if (slot.char) currentSlotStyle = { ...currentSlotStyle, ...styles.otpInputActive };
+                        if (slot.isActive) currentSlotStyle = { ...currentSlotStyle, ...styles.otpInputFocused };
+                        if (displayError) currentSlotStyle = { ...currentSlotStyle, ...styles.otpInputError };
 
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
-            <button type="button" onClick={onBack} style={styles.backFormLink} disabled={isLoading}>
-                <label style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>Вернуться на форму</label>
-            </button>
-        </div>
-        </div>
+                        return (
+                        <div key={idx} style={currentSlotStyle}>
+                            {slot.char}
+                            {slot.hasFakeCaret && <div style={styles.fakeCaret} />}
+                        </div>
+                        );
+                    })}
+                    </div>
+                )}
+                />
+            </motion.div>
 
-        <div style={{ flexGrow: 1 }} />
-    </motion.div>
-  );
+            <AnimatePresence>
+                {displayError && (
+                <motion.div
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    style={{ ...styles.messageError, ...activeDesign.errorAlert }}
+                >
+                    {displayError}
+                </motion.div>
+                )}
+            </AnimatePresence>
+            <DefaultButton
+                text={isLoading ? "Проверка..." : "Подтвердить"}
+                status="primary"
+                fullWidth={true}
+                br="18px"
+                onClick={handleVerify}
+                disabled={!otpComplete || isLoading}
+            />
+                <div style={{ flexGrow: 1 }} />
+            <div style={styles.bottomRow}>
+                {resendCooldown > 0 ? (
+                <span>
+                    Отправить повторно через <span style={styles.cooldownText}>{resendCooldown}с</span>
+                </span>
+                ) : (
+                <button type="button" onClick={handleResend} style={styles.resendLink}>
+                    <RefreshCw size={12} style={{ marginRight: '4px' }} />
+                    Отправить повторно
+                </button>
+                )}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: '4px' }}>
+                <button type="button" onClick={onBack} style={styles.backFormLink} disabled={isLoading}>
+                    <label style={{ cursor: isLoading ? 'not-allowed' : 'pointer' }}>Вернуться на форму</label>
+                </button>
+            </div>
+            </div>
+
+            <div style={{ flexGrow: 1 }} />
+        </motion.div>
+    );
 };
 
 const styles = {
@@ -220,28 +230,29 @@ const styles = {
     justifyContent: 'center',
     fontSize: '20px',
     fontWeight: 800,
-    borderRadius: '16px',
-    border: '1px solid #e5e7eb',
-    background: 'rgba(248, 249, 255, 0.7)',
-    color: '#111827',
+    borderRadius: theme.borderRadius.large,
     boxSizing: 'border-box' as const,
-    transition: 'all 0.15s ease-in-out',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
     position: 'relative' as const,
+    outline: 'none',
+    textAlign: 'center' as const,
   },
   otpInputActive: {
-    backgroundColor: 'rgba(238, 242, 255, 0.7)',
+    backgroundColor: 'rgba(255, 255, 255, 0.6)',
     borderColor: '#0d6fff',
-    color: '#0d6fff',
   },
   otpInputFocused: {
+    backgroundColor: 'rgba(255, 255, 255, 0.75)',
     borderColor: '#0d6fff',
-    backgroundColor: 'rgba(238, 242, 255, 0.7)',
-    boxShadow: '0 0 0 3px rgba(13, 111, 255, 0.1)',
+    color: '#0d6fff',
+    boxShadow: `0 0 0 4px ${theme.colors.system.focusShadow}, 0 1px 0 0 rgba(255, 255, 255, 0.2) inset`,
+    transform: 'scale(1.02)',
   },
   otpInputError: {
-    borderColor: '#f87171',
-    backgroundColor: '#fef2f2',
-    color: '#ef4444',
+    background: 'linear-gradient(135deg, rgba(254, 242, 242, 0.5) 0%, rgba(239, 68, 68, 0.08) 100%)',
+    borderColor: theme.colors.system.error,
+    color: theme.colors.system.error,
+    boxShadow: `0 0 0 4px ${theme.colors.system.errorShadow}, 0 4px 10px -2px rgba(239, 68, 68, 0.1)`,
   },
   fakeCaret: {
     position: "absolute" as const,
@@ -252,12 +263,12 @@ const styles = {
   },
   messageError: {
     borderRadius: '16px',
-    backgroundColor: '#fee2e2',
-    color: '#b91c1c',
     padding: '12px 16px',
     fontSize: '14px',
     textAlign: 'center' as const,
     marginTop: '6px',
+    width: '100%',
+    boxSizing: 'border-box' as const,
   },
   bottomRow: {
     display: 'flex',

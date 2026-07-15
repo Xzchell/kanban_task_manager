@@ -2,24 +2,52 @@ import type { ReactNode } from "react";
 import { useAuth } from "../context/auth_context";
 import { motion, AnimatePresence, easeInOut } from "framer-motion";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
-import TeamPage from "./my_team_page";
+import { useBoard } from "../hook/useBoards";
 import { ProfilePage } from "./my_profile_page";
 import LoginRegistrPage from "./login_registr_pages/login_registr_page";
 import BoardsListPage from "./create_board_pages/boards_list_page";
+import BoardTasksList from "./board_workplace/board_tasks_list";
 import FloatingSidebar from "../components/sidebar/floating_sidebar";
+import { theme } from "../themes/themes";
+import BoardMembersPage from "./board_workplace/board_members_page/board_members_page";
+import { BoardSocketSync } from "../context/board_socket_sync";
+import BoardSettingsPage from "./board_workplace/board_settings_page/board_settings_page";
+import InVitePage from "./invite_page";
 
 type AuthorizedLayoutProps = {
     children: ReactNode;
 };
 
 const AuthorizedLayout = ({ children }: AuthorizedLayoutProps) => {
-    return (
-        <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
-            <FloatingSidebar/>
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-                {children}
+    if (location.pathname !== "/invite"){
+        return (
+            <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
+                <FloatingSidebar/>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {children}
+                </div>
             </div>
-        </div>
+        );        
+    }
+    return(
+        <>{children}</>
+    );
+};
+
+const ProtectedBoardRoute = ({ children }: { children: ReactNode }) => {
+    const { selectedBoard, loading } = useBoard();
+    const location = useLocation();
+
+    const isBoardRoute = location.pathname.startsWith('/board-');
+
+    if (isBoardRoute && !selectedBoard && !loading) {
+        return <Navigate to="/boards" replace />;
+    }
+    
+    return (
+        <BoardSocketSync>
+            {children}
+        </BoardSocketSync>
     );
 };
 
@@ -44,13 +72,12 @@ const PagesControl = () => {
                             <Routes location={location} key={location.pathname}>
                                 <Route path="/boards" element={
                                     <motion.div {...animProps}>
-                                        {/*<TaskList />*/}
                                         <BoardsListPage/>
                                     </motion.div>
                                 } />
-                                <Route path="/team" element={
+                                <Route path="/settings" element={
                                     <motion.div {...animProps}>
-                                        <TeamPage />
+                                        <></>
                                     </motion.div>
                                 } />
                                 <Route path="/profile" element={
@@ -58,6 +85,36 @@ const PagesControl = () => {
                                         <ProfilePage />
                                     </motion.div>
                                 } />
+                                
+                                <Route path="/board-tasks" element={
+                                    <ProtectedBoardRoute>
+                                        <motion.div {...animProps}>
+                                            <BoardTasksList />
+                                        </motion.div>
+                                    </ProtectedBoardRoute>
+                                } />
+                                <Route path="/board-members" element={
+                                    <ProtectedBoardRoute>
+                                        <motion.div {...animProps}>
+                                            <BoardMembersPage/>
+                                        </motion.div>
+                                    </ProtectedBoardRoute>
+                                } />
+                                <Route path="/board-settings" element={
+                                    <ProtectedBoardRoute>
+                                        <motion.div {...animProps}>
+                                            <BoardSettingsPage/>
+                                        </motion.div>
+                                    </ProtectedBoardRoute>
+                                } />
+                                <Route path="/invite" element={
+                                    <ProtectedBoardRoute>
+                                        <motion.div {...animProps}>
+                                            <InVitePage/>
+                                        </motion.div>
+                                    </ProtectedBoardRoute>
+                                } />
+
                                 <Route path="*" element={<Navigate to="/boards" />} />
                             </Routes>
                         </AnimatePresence>
@@ -81,11 +138,11 @@ const styles = {
         width: "100%",
         height: "100vh",
         overflow: "hidden" as const,
-        backgroundColor: "#F4F7F9"
+        backgroundColor: theme.colors.bg.main,
     },
     pageStyles : {
-    width: "100%",
-    height: "100%"
+        width: "100%",
+        height: "100%"
     }
 }
 

@@ -1,6 +1,10 @@
+import { useEffect, useState } from "react";
 import StatusTaskContainer from "../components/status_task_container";
 import type { ITaskData } from "../components/task_card";
-import { formatedDate, formatFullName } from "../utils/formatters";
+import { useBoard } from "../hook/useBoards";
+import { formatFullName } from "../utils/formatters";
+import { TaskDeadlineWidget } from "../components/task_deadline_widget";
+import { useBoardPermissions } from "../hook/useBoardMember";
 
 export interface ITaskModalPreview {
     task : ITaskData,
@@ -8,8 +12,17 @@ export interface ITaskModalPreview {
     onSwitchStatus: (taskId : number, newStatus : number) => void,
 }
 
-const TaskModalPreview: React.FC<ITaskModalPreview> = ({task, renderButtons, onSwitchStatus}) => {
-    
+const TaskModalPreview: React.FC<ITaskModalPreview> = ({task: initialTask, renderButtons, onSwitchStatus}) => {
+    const { selectedBoard } = useBoard();
+
+    const [task, setTask] = useState<ITaskData>(initialTask);
+
+    useEffect(() => {
+        setTask(initialTask);
+    }, [initialTask]);
+
+    const { canCreateAndMoveTasks } = useBoardPermissions();
+
     const renderPriority = (priority : number) => {
         const config: { [key: number]: { text: string; color: string; backgroundColor: string } } = {
             1: { text: 'Низкий', color: '#00c950', backgroundColor: '#f0fdf4' },
@@ -44,45 +57,73 @@ const TaskModalPreview: React.FC<ITaskModalPreview> = ({task, renderButtons, onS
             </div>
             <div style={{display: 'flex', flex: 1, minHeight: 0}}>
                 <div style={styles.content}>
-                    <div
-                        className="task_desc"
-                        style = {{paddingBottom: '30px', paddingTop: '10px'}}
-                        dangerouslySetInnerHTML={{ __html: task.full_desc }}
+                    <div 
+                        dangerouslySetInnerHTML={{ __html: task.full_desc }} 
+                        style={styles.richText}
                     />
                 </div>
                 <div style = {styles.sidebar}>
-                    <div style = {{flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '5px', flexShrink: 0, overflowY: 'auto' as const,}}>
+                    <div style = {{flex: 1, display: 'flex', flexDirection: 'column' as const, gap: '10px', flexShrink: 0, overflowY: 'auto' as const,}}>
                         <b style={styles.label}>Статус</b>
                         <div style={{margin: '10px 0'}}> 
-                            <StatusTaskContainer status={task.status} taskId={task.id} onStatusChange={onSwitchStatus}></StatusTaskContainer>
+                        <StatusTaskContainer
+                            status={task.status}
+                            taskId={task.id}
+                            columns={selectedBoard?.columns ?? []}
+                            onStatusChange={(taskId, newColumnId) => {
+                                if(canCreateAndMoveTasks)
+                                onSwitchStatus(taskId, newColumnId);
+                                    
+                            }}
+                        />
                         </div>
                         <b style={styles.label}>Приоритет</b> 
                         {renderPriority(task.priority)}
-                        <b style={styles.label}>Срок</b> <label>{formatedDate(task.deadline)}</label>
-                        <div>
+                        <div style={styles.deadlineSection}>
+                            <TaskDeadlineWidget 
+                                deadline={task.deadline} 
+                                timePoint={task.time_point} 
+                                boardType={String(selectedBoard?.type.name)} 
+                            />
+                        </div>
+
+                        {
+                            <div>
                                 <b style={styles.label}>Исполнители:</b>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                                    {task.executors && task.executors.length > 0 ? (
-                                        task.executors.filter((executor) => executor.id != task.author.id).map((executor) => (
-                                            <label key={executor.id} style={{ fontSize: '16px', fontFamily: 'var(--font-rounded)'}}>
-                                                {formatFullName(executor)}
-                                            </label>
-                                        ))
-                                    ) : (
-                                        <span style={{ color: '#343434', fontSize: '16px', fontFamily: 'var(--font-rounded)', fontWeight: '600' }}>Не назначены</span>
-                                    )}
+                                    {(() => {
+                                        const externalExecutors = task.executors 
+                                            ? task.executors.filter((executor) => executor.id !== task.author.id) 
+                                            : [];
+
+                                        if (externalExecutors.length > 0) {
+                                            return externalExecutors.map((executor) => (
+                                                <label key={executor.id} style={{ fontSize: '16px', fontFamily: 'var(--font-rounded)' }}>
+                                                    {formatFullName(executor)}
+                                                </label>
+                                            ));
+                                        }
+                                        return (
+                                            <span style={{ color: '#343434', fontSize: '16px', fontFamily: 'var(--font-rounded)', fontWeight: '600' }}>
+                                                Не назначены
+                                            </span>
+                                        );
+                                    })()}
                                 </div>
                             </div>
-                        
+                        }
+                        <b style={styles.label}>Статус isMvp - {task.isMvp ? "Есть" : "Нет статуса"}</b>
                         <b style={styles.label}>Автор:</b> <label>{task.author.last_name + ' ' + task.author.first_name + ' ' + task.author.middle_name}</label>
                         <b style={styles.label}>Теги</b>
                         <div style={styles.tags}>
-                        {task.tags.map((tag) => (
+                        {task.tags.length > 0 ? task.tags.map((tag) => (
                             <span 
                                 key={tag.id} style={{...styles.tag, backgroundColor: tag.background_color, color: tag.tag_color, border: `1px solid color-mix(in srgb, ${tag.tag_color}, white 40%)`}}>
                                 {tag.name}
                             </span>
-                        ))}
+                        )) : 
+                            <label>Нет тегов</label>
+                        }
                         </div>
                     </div>
                     {renderButtons()}
@@ -146,14 +187,28 @@ const styles = {
         width: '100%',
         borderBottom: '2px solid #e3e3e3',
     },
+    deadlineSection: {
+        marginTop: "10px",
+        marginBottom: "10px"
+    },
     content: {
-        padding: '0 20px',
+        paddingRight: '10px',
         flex: 1,
         flexDirection: 'column' as const,
         minHeight: 0,
         overflowY: 'auto' as const,
         WebkitMaskImage: 'linear-gradient(to bottom, transparent, black 5%, black 90%, transparent)',
         maskImage: 'linear-gradient(to bottom, transparent, black 5%, black 90%, transparent)',
+    },
+    richText: {
+        marginLeft: "10px",
+        marginRight: "10px",
+        wordBreak: 'break-word' as const,
+        whiteSpace: 'pre-wrap' as const,
+        fontFamily: 'var(--font-rounded)',
+        fontSize: '16px',
+        lineHeight: '1.5',
+        color: '#333',
     },
     status:{
         whiteSpace: 'nowrap',

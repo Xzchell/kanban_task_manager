@@ -24,12 +24,17 @@ export const AnimatedBackground: React.FC = () => {
                 70% { transform: translate(-100px, 200px) scale(0.95) rotate(240deg); }
                 100% { transform: translate(0px, 0px) scale(1) rotate(360deg); }
             }
+            @keyframes floatCenter {
+                0% { transform: translate(-50%, -50%) scale(1) rotate(0deg); }
+                50% { transform: translate(-48%, -52%) scale(1.1) rotate(180deg); }
+                100% { transform: translate(-50%, -50%) scale(1) rotate(360deg); }
+            }
             `}
         </style>
             <div style={{ ...styles.spot, ...styles.blueSpot }}></div>
             <div style={{ ...styles.spot, ...styles.purpleSpot }}></div>
             <div style={{ ...styles.spot, ...styles.lightBlueSpot }}></div>
-
+            <div style={{ ...styles.spot, ...styles.centerSpot }}></div>
             <div style={styles.gridOverlay}></div>
         </div>
     );
@@ -43,7 +48,6 @@ const styles: { [key: string]: React.CSSProperties } = {
         right: 0,
         bottom: 0,
         overflow: "hidden",
-        zIndex: 0,
         backgroundColor: "#eef4ff", 
     },
     spot: {
@@ -75,6 +79,17 @@ const styles: { [key: string]: React.CSSProperties } = {
         height: "45vw",
         backgroundColor: "#06b6d4", 
         animation: "float3 12s infinite ease-in-out",
+    },
+    centerSpot: {
+        top: "50%",
+        left: "50%",
+        width: "40vw",
+        height: "40vw",
+        background: "linear-gradient(135deg, #0d6fff 0%, #8b5cf6 100%)", 
+        transform: "translate(-50%, -50%)",
+        animation: "floatCenter 16s infinite ease-in-out",
+        opacity: 0.15, 
+        filter: "blur(110px)",
     },
     gridOverlay: {
         position: "absolute",

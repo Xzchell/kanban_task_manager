@@ -37,7 +37,7 @@ const EmptyBoardsState: React.FC<IEmptyBoardStateProps> = ({ onBoardCreated }) =
             .responsive-float-card { display: none !important; }
             }
         `}</style>
-    <AnimatedBackground />
+    
         {FLOAT_CARDS.map((card) => (
             <div
             key={card.label}
@@ -147,7 +147,6 @@ const styles = {
     width: "100%",
     height: "100%",
     overflow: "hidden" as const,
-    backgroundColor: "#e0e7ff",
     transition: "background-color 0.3s, color 0.3s",
   },
 

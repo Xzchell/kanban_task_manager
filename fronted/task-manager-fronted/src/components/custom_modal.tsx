@@ -1,5 +1,8 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useDesignMode } from '../context/design_context';
+import { theme } from '../themes/themes';
 
 export interface ICustomModalProps {
     isOpen: boolean;
@@ -10,11 +13,30 @@ export interface ICustomModalProps {
 }
 
 const CustomModal: React.FC<ICustomModalProps> = ({ isOpen, onClose, children, width, height }) => {
-    return (
+    const { mode } = useDesignMode();
+    const activeModalTheme = theme.modes[mode].modal;
+
+    const dynamicBackdropStyle = {
+        ...styles.backdrop,
+        backgroundColor: activeModalTheme.backdropBackground,
+        backdropFilter: activeModalTheme.backdropFilter,
+        WebkitBackdropFilter: activeModalTheme.WebkitBackdropFilter
+    };
+
+    const dynamicCardStyle = {
+        ...styles.modalCard,
+        backgroundColor: activeModalTheme.cardBackground,
+        border: activeModalTheme.border,
+        boxShadow: activeModalTheme.boxShadow,
+        maxWidth: width || styles.modalCard.maxWidth, 
+        height: height || styles.modalCard.height 
+    };
+
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div 
-                    style={styles.backdrop}
+                    style={dynamicBackdropStyle}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -22,11 +44,7 @@ const CustomModal: React.FC<ICustomModalProps> = ({ isOpen, onClose, children, w
                     onClick={onClose}
                 >
                     <motion.div 
-                        style={{ 
-                            ...styles.modalCard, 
-                            maxWidth: width || styles.modalCard.maxWidth, 
-                            height: height || styles.modalCard.height 
-                        }}
+                        style={dynamicCardStyle}
                         initial={{ opacity: 0, scale: 0.93, x: "-50%", y: "-43%" }} 
                         animate={{ opacity: 1, scale: 1, x: "-50%", y: "-50%" }}   
                         exit={{ 
@@ -50,11 +68,10 @@ const CustomModal: React.FC<ICustomModalProps> = ({ isOpen, onClose, children, w
                     </motion.div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };
-
-export default CustomModal;
 
 const styles = {
     backdrop: {
@@ -63,32 +80,27 @@ const styles = {
         left: 0,
         width: '100vw',
         height: '100vh',
-        backgroundColor: 'rgba(15, 23, 42, 0.3)',
         zIndex: 1000,
-        backdropFilter: 'blur(8px)', 
-        WebkitBackdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        transition: 'background-color 0.3s ease, backdrop-filter 0.3s ease',
     },
     modalCard: {
         top: '50%',
         left: '50%',
         position: 'fixed' as const,
         transform: 'translate(-50%, -50%)',
-        zIndex: 1001,
+        zIndex: 10000,
         width: '100%',
         maxWidth: '60vw',
         maxHeight: '80vh',
         height: '100%',
-        backgroundColor: '#fff',
-        color: 'var(--foreground)', 
         borderRadius: '24px',
-        border: '1px solid var(--border)',
-        boxShadow: '0 30px 60px -15px rgba(0, 0, 0, 0.2), 0 0 50px -10px rgba(79, 110, 247, 0.05)',
         display: 'flex',
         flexDirection: 'column' as const,
         overflow: 'hidden' as const,
+        transition: 'background-color 0.3s ease, border 0.3s ease, box-shadow 0.3s ease',
     },
     content: {
         padding: '20px',
@@ -100,3 +112,5 @@ const styles = {
         maskImage: 'linear-gradient(to bottom, transparent, black 4%, black 96%, transparent)',
     }
 };
+
+export default CustomModal;

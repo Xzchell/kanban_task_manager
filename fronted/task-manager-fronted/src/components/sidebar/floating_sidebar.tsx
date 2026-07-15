@@ -1,91 +1,189 @@
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { LayoutDashboard, Folder, Settings, Users, BarChart2, LogOut, PanelLeftOpen, ChevronLeft } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Folder, Users, LogOut, PanelLeftOpen, ChevronLeft, ArrowLeft, LayoutDashboard, Settings } from 'lucide-react';
 import SidebarButton from './sidebar_button';
 import { useAuth } from '../../context/auth_context';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { theme } from '../../themes/themes';
+import { useDesignMode } from '../../context/design_context';
+import { useBoard } from '../../hook/useBoards';
+
+interface MenuItem {
+    id: string;
+    icon: React.ReactNode;
+    label: string;
+    path: string;
+}
 
 export const FloatingSidebar: React.FC = () => {
     const [isCollapsed, setIsCollapsed] = useState(true);
+    const [activeTab, setActiveTab] = useState('boards');
 
     const navigate = useNavigate();
     const location = useLocation();
-    const {logout : authlogout} = useAuth();
-    const handleLogout = () => authlogout()
+    const { logout } = useAuth();
+    const { mode } = useDesignMode();
+    
+    const { loading, selectedBoard, resetDataBoard } = useBoard();
 
+    const activeDesign = theme.modes[mode];
     const currentTab = location.pathname.split('/')[1] || 'boards';
-    const [activeTab, setActiveTab] = useState(currentTab); 
 
     useEffect(() => {
         setActiveTab(currentTab);
-    }, [location.pathname]);
 
-    const handleTabClick = (tabId: string) => {
+        const globalPages = ['boards', 'settings'];
+
+        if (globalPages.includes(currentTab) && (selectedBoard !== null || localStorage.getItem("selected_board_id"))) {
+            resetDataBoard?.();
+        }
+    }, [location.pathname, currentTab]);
+
+    const handleTabClick = (tabId: string, path: string) => {
         setActiveTab(tabId);
-        navigate(`/${tabId}`);
+        navigate(path);
     };
 
-    const menuItems = [
-        //{ id: 'workspace', icon: <LayoutDashboard size={20} />, label: "Рабочее пространство" },
-        { id: 'boards', icon: <Folder size={20} />, label: "Мои доски" , onClick: () => {handleTabClick('boards')}},
-        { id: 'team', icon: <Users size={20} />, label: "Команда", onClick: () => {handleTabClick('team')} },
-        //{ id: 'analytics', icon: <BarChart2 size={20} />, label: "Аналитика" },
-        //{ id: 'settings', icon: <Settings size={20} />, label: "Настройки" },
+    const handleBackToBoards = () => {
+        if (resetDataBoard) {
+            resetDataBoard();
+        }
+        handleTabClick('boards', '/boards');
+    };
+
+    const globalMenuItems: MenuItem[] = [
+        { id: 'boards', icon: <Folder size={20} />, label: "Мои доски", path: '/boards' },
+        { id: 'settings', icon: <Settings size={20} />, label: "Параметры", path: '/settings' },
     ];
+
+    const boardMenuItems: MenuItem[] = [
+        { id: 'board-tasks', icon: <LayoutDashboard size={20} />, label: "Задачи доски", path: '/board-tasks' },
+        { id: 'board-members', icon: <Users size={20} />, label: "Участники", path: '/board-members' },
+        { id: 'board-settings', icon: <Settings size={20} />, label: "Настройки доски", path: '/board-settings' },
+    ];
+
+    const hasIdInStorage = Boolean(localStorage.getItem("selected_board_id"));
+    const isBoardContextActive = selectedBoard !== null || (loading && hasIdInStorage);
 
     return (
         <motion.div
             animate={{ width: isCollapsed ? '84px' : '280px' }}
             transition={{ type: "spring", stiffness: 220, damping: 26 }}
-            style={styles.sidebarContainer}
+            style={{ ...styles.sidebarContainer, ...activeDesign.sidebar }}
         >
             <div style={styles.header}>
                 {!isCollapsed && (
-                    <motion.span 
+                    <motion.div 
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
-                        style={styles.logoText}
+                        style={styles.logoWrapper}
                     >
-                    <div className = "side-bar-logo" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <img src="src\assets\site_logo.svg" alt="Logo" style={{ width: '48px', height: '48px', borderRadius: '12px' }} />
-                        <h2 style={{ color: '#000000', marginLeft: '4px', fontSize: '20px', fontFamily: 'var(--font-rounded)' }}>TaskManager</h2>
-                    </div>
-                    </motion.span>
+                        <img src="src/assets/site_logo.svg" alt="Logo" style={styles.logoImg} />
+                        <h2 style={styles.logoTitle}>TaskManager</h2>
+                    </motion.div>
                 )}
                 
-                <button 
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    style={styles.toggleButton}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'rgba(0, 0, 0, 0.05)'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
-                >
+                <button onClick={() => setIsCollapsed(!isCollapsed)} style={styles.toggleButton}>
                     {isCollapsed ? <PanelLeftOpen size={18} /> : <ChevronLeft size={18} />}
                 </button>
             </div>
 
+            <div style={{ marginBottom: isBoardContextActive && !isCollapsed ? '16px' : '0px', transition: 'margin 0.2s' }}>
+                <AnimatePresence mode="wait">
+                    {isBoardContextActive && !isCollapsed && (
+                        <motion.div
+                            key="board-title-container"
+                            initial={{ opacity: 0, y: -5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -5 }}
+                            transition={{ duration: 0.15 }}
+                            style={styles.boardTitleContainer}
+                        >
+                            {selectedBoard ? (
+                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                    <span style={styles.boardTitleLabel}>Текущая доска:</span>
+                                    <span style={styles.boardTitleName}>{selectedBoard.title}</span>
+                                </div>
+                            ) : (
+                                <motion.div
+                                    key="board-title-loading"
+                                    animate={{ opacity: [0.4, 1, 0.4] }}
+                                    transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                                    style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}
+                                >
+                                        <div style={{ width: '80px', height: '10px', backgroundColor: '#e2e8f0', borderRadius: '4px' }} />
+                                        <div style={{ width: '140px', height: '16px', backgroundColor: '#cbd5e1', borderRadius: '4px' }} />
+                                </motion.div>
+                            )}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+
             <div style={styles.menuList}>
-                {menuItems.map((item) => (
-                    <SidebarButton
-                        key={item.id}
-                        text={item.label}
-                        icon={item.icon}
-                        isCollapsed={isCollapsed}
-                        size="full"
-                        status={activeTab === item.id ? 'active' : 'neutral'}
-                        onClick={() => item.onClick && item.onClick()}
-                    />
-                ))}
+                <AnimatePresence mode="popLayout" initial={false}>
+                    {isBoardContextActive ? (
+                        <motion.div
+                            key="board-menu"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.15, ease: "easeInOut" }}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}
+                        >
+                            <SidebarButton
+                                text="Назад к доскам"
+                                icon={<ArrowLeft size={20} />}
+                                isCollapsed={isCollapsed}
+                                size="full"
+                                status="neutral"
+                                onClick={handleBackToBoards}
+                            />
+                            {boardMenuItems.map((item) => (
+                                <SidebarButton
+                                    key={item.id}
+                                    text={item.label}
+                                    icon={item.icon}
+                                    isCollapsed={isCollapsed}
+                                    size="full"
+                                    status={activeTab === item.id ? 'active' : 'neutral'}
+                                    onClick={() => handleTabClick(item.id, item.path)}
+                                />
+                            ))}
+                        </motion.div>
+                    ) : (
+                        <motion.div
+                            key="global-menu"
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            transition={{ duration: 0.15, ease: "easeInOut" }}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '4px', width: '100%' }}
+                        >
+                            {globalMenuItems.map((item) => (
+                                <SidebarButton
+                                    key={item.id}
+                                    text={item.label}
+                                    icon={item.icon}
+                                    isCollapsed={isCollapsed}
+                                    size="full"
+                                    status={activeTab === item.id ? 'active' : 'neutral'}
+                                    onClick={() => handleTabClick(item.id, item.path)}
+                                />
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
 
             <div style={styles.footerSection}>
-                <div style={{ ...styles.profileCard, justifyContent: isCollapsed ? 'center' : 'flex-start', cursor: 'pointer' }} onClick={() => navigate('/profile')}>
-                    <div style={styles.avatar}>U</div>
+                <div 
+                    style={{ ...styles.profileCard, justifyContent: isCollapsed ? 'center' : 'flex-start' }} 
+                    onClick={() => navigate('/profile')}
+                >
+                    <div style={styles.avatar}>В</div>
                     {!isCollapsed && (
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            style={styles.userInfo}
-                        >
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.userInfo}>
                             <span style={styles.userName}>Владислав</span>
                             <span style={styles.userRole}>Разработчик</span>
                         </motion.div>
@@ -98,7 +196,7 @@ export const FloatingSidebar: React.FC = () => {
                     status="danger"
                     size="full"
                     isCollapsed={isCollapsed}
-                    onClick={handleLogout}
+                    onClick={logout}
                 />
             </div>
         </motion.div>
@@ -113,15 +211,11 @@ const styles = {
         top: '20px',
         left: '20px',
         bottom: '20px',
-        backgroundColor: '#fff',
-        color: 'var(--foreground)',
-        borderRadius: '24px',
-        border: '1px solid var(--border)',
-        boxShadow: '0 20px 40px -15px rgba(0, 0, 0, 0.08), 0 0 50px -10px rgba(79, 110, 247, 0.02)',
+        borderRadius: theme.borderRadius.xlarge,
         display: 'flex',
         flexDirection: 'column' as const,
         overflow: 'hidden' as const,
-        zIndex: 90,
+        zIndex: 15,
         padding: '20px 14px',
         boxSizing: 'border-box' as const,
     },
@@ -135,13 +229,21 @@ const styles = {
         flexShrink: 0,
         overflow: 'hidden' as const,
     },
-    logoText: {
-        fontWeight: 'extrabold',
-        fontSize: '18px',
-        fontFamily: 'var(--font-rounded), sans-serif',
-        background: 'linear-gradient(135deg, #6366f1 0%, #4f7ef7 100%)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent',
+    logoWrapper: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px'
+    },
+    logoImg: {
+        width: '48px',
+        height: '48px',
+        borderRadius: '12px'
+    },
+    logoTitle: {
+        color: '#000000',
+        marginLeft: '4px',
+        fontSize: '20px',
+        fontFamily: 'var(--font-rounded)'
     },
     toggleButton: {
         background: 'none',
@@ -154,7 +256,25 @@ const styles = {
         justifyContent: 'center',
         padding: '8px',
         borderRadius: '12px',
-        transition: 'background-color 0.2s',
+    },
+    boardTitleContainer: {
+        padding: '0 8px',
+        display: 'flex',
+        flexDirection: 'column' as const,
+    },
+    boardTitleLabel: {
+        fontSize: '11px',
+        color: '#647080',
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.05em',
+    },
+    boardTitleName: {
+        fontSize: '15px',
+        fontWeight: 'bold',
+        color: '#1e293b',
+        whiteSpace: 'nowrap' as const,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
     },
     menuList: {
         display: 'flex',
@@ -180,6 +300,7 @@ const styles = {
         padding: '0 8px',
         gap: '12px',
         marginBottom: '4px',
+        cursor: 'pointer'
     },
     avatar: {
         width: '36px',

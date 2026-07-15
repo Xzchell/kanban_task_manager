@@ -1,11 +1,16 @@
 import { SlidersHorizontal } from 'lucide-react';
+import { useDesignMode } from '../context/design_context';
+import { theme } from '../themes/themes';
 export interface IFilterButton {
     setIsSidebarOpen : (opened : boolean) => void;
 }
 
 const FilterButton : React.FC<IFilterButton> = ({setIsSidebarOpen}) => {
+    const { mode } = useDesignMode();
+    const activeSearchTheme = theme.modes[mode].searchBar; 
+ 
     return(
-        <button onClick={() => setIsSidebarOpen(true)} style={styles.filterBtn}>
+        <button onClick={() => setIsSidebarOpen(true)} style={{...styles.filterBtn, ...activeSearchTheme}}>
             <SlidersHorizontal size={20} />
             <span>Фильтры</span>
         </button>
@@ -26,7 +31,6 @@ const styles = {
         color: 'var(--text-main)',
         fontFamily: 'var(--font-rounded)',
         fontWeight: 600,
-        marginBottom: '24px',
         fontSize: '15px',
         cursor: 'pointer',
         transition: 'all 0.2s ease',

@@ -1,9 +1,9 @@
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import TaskList from '@tiptap/extension-task-list'
-import TaskItem from '@tiptap/extension-task-item'
-import TapUnderline from '@tiptap/extension-underline'
-import { Bold, Code2, Heading1, Heading2, Heading3, Italic, ListOrdered, /*ListTodo,*/ LucideList, Underline } from 'lucide-react';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
+import TapUnderline from '@tiptap/extension-underline';
+import { Bold, Code2, Heading1, Heading2, Heading3, Italic, ListOrdered, LucideList, Underline } from 'lucide-react';
 
 interface IRichTextEditor {
     content: string;
@@ -14,7 +14,9 @@ interface IRichTextEditor {
 const RichTextEditor = ({ content, onChange, minHeight }: IRichTextEditor) => {
     const editor = useEditor({
         extensions: [
-            StarterKit,
+            StarterKit.configure({
+                underline: false,
+            }),
             TaskList,
             TapUnderline,
             TaskItem.configure({
@@ -29,9 +31,19 @@ const RichTextEditor = ({ content, onChange, minHeight }: IRichTextEditor) => {
 
     if (!editor) return null;
 
+    const handleWrapperClick = () => {
+        if (editor && !editor.isFocused) {
+            editor.chain().focus().run();
+        }
+    };
+
     return (
-        <div style={{...styles.editorWrapper, minHeight: minHeight || '300px'}}>
-            <div style={styles.toolbar}>
+        <div 
+            style={{...styles.editorWrapper, minHeight: minHeight || '300px'}}
+            onClick={handleWrapperClick}
+        >
+            <div style={styles.toolbar} onClick={(e) => e.stopPropagation()}>
+               
                 <button 
                     onClick={() => editor.chain().focus().toggleBold().run()}
                     style={{ 
@@ -40,7 +52,7 @@ const RichTextEditor = ({ content, onChange, minHeight }: IRichTextEditor) => {
                         color: editor.isActive('bold') ? '#000' : '#555'
                     }}
                 >
-                    <Bold size = {20}/>
+                    <Bold size={20}/>
                 </button>
                 <button 
                     onClick={() => editor.chain().focus().toggleItalic().run()}
@@ -60,7 +72,7 @@ const RichTextEditor = ({ content, onChange, minHeight }: IRichTextEditor) => {
                         color: editor.isActive('underline') ? '#000' : '#555'
                     }}
                 >
-                    <Underline size = {20} />
+                    <Underline size={20} />
                 </button>
                 
                 <div style={styles.divider}></div>
@@ -86,19 +98,6 @@ const RichTextEditor = ({ content, onChange, minHeight }: IRichTextEditor) => {
                 >
                     <ListOrdered size={20}/>
                 </button>
-
-                {/*
-                <button 
-                    onClick={() => editor.chain().focus().toggleTaskList().run()}
-                    style={{ 
-                        ...styles.toolBtn, 
-                        backgroundColor: editor.isActive('taskList') ? '#e3e3e3' : 'transparent',
-                        color: editor.isActive('taskList') ? '#000' : '#555'
-                    }}
-                >
-                    <ListTodo size={20}/>
-                </button>
-                */}
                 
                 <div style={styles.divider}></div>
                 
@@ -120,9 +119,9 @@ const RichTextEditor = ({ content, onChange, minHeight }: IRichTextEditor) => {
                         color: editor.isActive('heading', { level: 2 }) ? '#000' : '#555'
                     }}
                 >
-                <Heading2 size={20}/>
+                    <Heading2 size={20}/>
                 </button>
-                    <button 
+                <button 
                     onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
                     style={{ 
                         ...styles.toolBtn, 
@@ -161,7 +160,8 @@ const styles = {
         width: '100%',
         flexDirection: 'column' as const,
         maxHeight: '100%',
-        minHeight: '700px'
+        minHeight: '300px',
+        cursor: 'text'
     },
     toolbar: {
         display: 'flex',
@@ -185,11 +185,12 @@ const styles = {
         display: 'flex',
         flex: 1,
         padding: '10px',
-        minHeight: '150px',
         outline: 'none',
         border: 'none',
         overflowY: 'auto' as const,
         flexDirection: 'column' as const,
+        wordBreak: 'break-word' as const,
+        whiteSpace: 'pre-wrap' as const,
     },
     divider: {
         width: '2px',

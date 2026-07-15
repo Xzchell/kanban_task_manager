@@ -1,5 +1,5 @@
 <?php
-function checkAuth($pdo) {
+function checkAuth(PDO $pdo) {
     $token = $_COOKIE['auth_token'] ?? '';
 
     if (empty($token))

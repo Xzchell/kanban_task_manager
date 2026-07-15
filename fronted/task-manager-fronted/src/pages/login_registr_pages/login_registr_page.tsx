@@ -7,6 +7,8 @@ import { AnimatePresence, motion } from "motion/react";
 import SegmentedToggle from "../../components/segmented_toggle";
 import StepsRegistr from "./steps_of_registrs";
 import { VerifyEmailStep } from "./verify_email_step";
+import { theme } from "../../themes/themes";
+import { useDesignMode } from "../../context/design_context";
 
 const LoginRegistrPage: React.FC = () => {
     // login data
@@ -20,6 +22,9 @@ const LoginRegistrPage: React.FC = () => {
     const [verifyEmail, setVerifyEmail] = useState("");
 
     const auth = useAuth();
+
+    const { mode } = useDesignMode();
+    const activeDesign = theme.modes[mode];
 
     const toggleConfig = [
         {
@@ -75,7 +80,7 @@ const LoginRegistrPage: React.FC = () => {
                 style={{
                     display: 'flex',
                     flexDirection: 'column',
-                    background: '#fff',
+                    //background: '#fff',
                     borderRadius: '16px',
                     boxSizing: 'border-box'
                 }}
@@ -104,7 +109,7 @@ const LoginRegistrPage: React.FC = () => {
                     placeholder="••••••••"
                     required
                 />
-                {message && <div style={styles.message}>{message}</div>}
+                {message && <div style={{...styles.message, ...activeDesign.errorAlert}}>{message}</div>}
 
                 <div style={{flexGrow: 1}}/>
 
@@ -155,7 +160,7 @@ const LoginRegistrPage: React.FC = () => {
             </style>
             
             <AnimatedBackground />
-            <div className="login-register-page-card" style={styles.card}>
+            <div className="login-register-page-card" style={{...styles.card, ...activeDesign.sidebar}}>
                 <div>
                     <AnimatePresence mode="wait">
                         {!isVerifyStatus && (
@@ -202,7 +207,6 @@ const LoginRegistrPage: React.FC = () => {
 }
 
 export default LoginRegistrPage;
-
 const styles = {
     background: {
         position: 'relative' as const,
@@ -211,8 +215,7 @@ const styles = {
         justifyContent: 'center',
         alignItems: 'center',
         padding: '30px',
-        backgroundColor: '#eef4ff',
-        fontFamily: 'var(--font-rounded), sans-serif',
+        fontFamily: 'var(--font-rounded)',
         overflow: 'hidden' as const, 
         boxSizing: 'border-box' as const,
     },
@@ -227,22 +230,10 @@ const styles = {
         paddingTop: '24px',
         paddingBottom: '32px',
         borderRadius: '32px',
-        background: 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(247,249,255,0.85) 100%)',
-        backdropFilter: 'blur(20px)', 
-        WebkitBackdropFilter: 'blur(20px)',
-        boxShadow: '0 30px 80px rgba(15, 23, 42, 0.08)',
-        border: '1px solid rgba(255, 255, 255, 0.6)',
+        //...theme.modes[mode].card,
+        //background: 'linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(247,249,255,0.85) 100%)',
+        //border: '1px solid rgba(255, 255, 255, 0.6)',
         boxSizing: 'border-box' as const,
-    },
-    toggleButtons: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '6px', 
-        padding: '6px', 
-        backgroundColor: 'rgba(240, 244, 255, 0.7)',
-        borderRadius: '22px',
-        marginBottom: '28px',
-        position: 'relative' as const,
     },
     form: {
         display: 'flex',
@@ -274,61 +265,6 @@ const styles = {
         letterSpacing: '0.08em',
         textTransform: 'uppercase' as const,
     },
-    input: {
-        width: '100%',
-        padding: '16px 18px',
-        borderRadius: '18px',
-        border: '1px solid #e5e7eb',
-        background: 'rgba(248, 249, 255, 0.7)',
-        fontSize: '15px',
-        color: '#111827',
-        outline: 'none',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
-        boxSizing: 'border-box' as const,
-    },
-    passwordLabelRow: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '12px',
-    },
-    eyeButton: {
-        border: 'none',
-        background: 'transparent',
-        cursor: 'pointer',
-        fontSize: '18px',
-        padding: 0,
-    },
-    infoRow: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    helpText: {
-        color: '#9ca3af',
-        fontSize: '13px',
-    },
-    linkButton: {
-        border: 'none',
-        background: 'transparent',
-        color: '#2563eb',
-        fontWeight: 700,
-        cursor: 'pointer',
-        padding: 0,
-        fontSize: '14px',
-    },
-    submitButton: {
-        width: '100%',
-        padding: '16px 18px',
-        borderRadius: '18px',
-        border: 'none',
-        backgroundColor: '#0d6fff',
-        color: '#ffffff',
-        fontSize: '16px',
-        fontWeight: 700,
-        cursor: 'pointer',
-        boxShadow: '0 18px 36px rgba(13, 110, 255, 0.18)',
-    },
     bottomRow: {
         display: 'flex',
         justifyContent: 'center',
@@ -348,19 +284,15 @@ const styles = {
         fontSize: '14px',
     },
     message: {
+        //...theme.modes[mode].errorAlert,
         borderRadius: '16px',
         backgroundColor: '#fee2e2',
-        color: '#b91c1c',
+
         padding: '12px 16px',
         fontSize: '14px',
         textAlign: 'center' as const,
     },
     textAnimationContainer: {
-        display: 'flex',
-        flexDirection: 'column' as const,
-        willChange: 'transform, opacity',
-    },
-    inputStepAnimation: {
         display: 'flex',
         flexDirection: 'column' as const,
         willChange: 'transform, opacity',

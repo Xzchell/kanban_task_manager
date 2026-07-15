@@ -44,6 +44,6 @@ const styles: { overlayStyle: React.CSSProperties } = {
         height: '100vh',
         backgroundColor: 'rgba(0, 0, 0, 0.4)',
         backdropFilter: 'blur(4px)',
-        zIndex: 999,
+        zIndex: 9999,
     }
 }

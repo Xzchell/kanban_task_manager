@@ -56,7 +56,7 @@ const styles = {
         border: '1px solid #e3e3e3',
         borderRadius: '26px',
         boxShadow: '0 10px 40px 20px rgba(0, 0, 0, 0.3)',
-        zIndex: 1000,
+        zIndex: 10000,
         textAlign: 'start' as const,
     },
     sort_buttons: {

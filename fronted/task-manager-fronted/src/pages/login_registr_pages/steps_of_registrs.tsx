@@ -321,7 +321,6 @@ const styles = {
     card: {
         display: 'flex',
         flexDirection: 'column' as const,
-        background: '#fff',
         borderRadius: '16px',
         
         height: '100%',
@@ -348,7 +347,7 @@ const styles = {
     },
     message: {
         borderRadius: '16px',
-        backgroundColor: '#fee2e2',
+        //backgroundColor: '#fee2e2',
         color: '#b91c1c',
         padding: '12px 16px',
         fontSize: '14px',

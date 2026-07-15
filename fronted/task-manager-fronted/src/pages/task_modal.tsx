@@ -2,10 +2,11 @@ import { motion } from "framer-motion";
 import type { ITaskData } from "../components/task_card";
 import DefaultButton from "../components/default_button";
 import { useAuth } from "../context/auth_context";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import TaskModalPreview from "./task_modal_preview";
 import TaskModalEditor from "./task_modal_editor";
 import { useAlert } from "../context/alert_context";
+import { useBoardPermissions } from "../hook/useBoardMember";
 
 export interface ITaskModal {
     task: ITaskData;
@@ -16,13 +17,31 @@ export interface ITaskModal {
 }
 
 const TaskModal: React.FC<ITaskModal> = ({ task, onClose, onSwitchStatus, onUpdate, onDelete }) => {
-    const {user} = useAuth();
     const [isEditing, setEditing] = useState(false);
-    
-    const isAuthor = user?.id === task.author.id;
-    const canEdit = isAuthor || (user?.role?.permission_level ?? 0) >= 3;
+    const [currentTask, setCurrentTask] = useState<ITaskData>(task);
+
+    useEffect(() => {
+        setCurrentTask(task);
+    }, [
+        task.id, 
+        task.title, 
+        task.full_desc, 
+        task.status, 
+        task.priority, 
+        task.deadline,
+        task.time_point?.id,
+        task.tags?.length, 
+        task.executors?.length
+    ]);
+    const { canEditOrDeleteTask } = useBoardPermissions();
+    const canEdit = canEditOrDeleteTask(currentTask);
 
     const { showAlert, hideAlert } = useAlert();
+
+    const handleStatusChange = (taskId: number, newStatus: number) => {
+        onSwitchStatus(taskId, newStatus);
+        setCurrentTask(prev => ({ ...prev, status: newStatus }));
+    };
 
     const renderButtons = (updatedTask?: ITaskData) => {
         if(canEdit){
@@ -39,7 +58,10 @@ const TaskModal: React.FC<ITaskModal> = ({ task, onClose, onSwitchStatus, onUpda
                         <div style = {{display: 'flex', flexDirection: 'row', gap: '5px'}}>
                             <DefaultButton text="Сохранить" onClick={() => 
                             {
-                                onUpdate(task.id!, updatedTask!);
+                                if (updatedTask) {
+                                    onUpdate(currentTask.id!, updatedTask);
+                                    setCurrentTask(updatedTask);
+                                }
                                 setEditing(false);
                             }    
                             } fullWidth = {true}/> 
@@ -49,7 +71,7 @@ const TaskModal: React.FC<ITaskModal> = ({ task, onClose, onSwitchStatus, onUpda
                                         "Удалить задачу",
                                         "Вы уверены, что хотите удалить эту задачу? Это действие нельзя будет отменить.",
                                         [
-                                            { text: "Удалить", status: "danger", onClick: () => { onDelete?.(task.id!); hideAlert(); onClose(); } },
+                                            { text: "Удалить", status: "danger", onClick: () => { onDelete?.(currentTask.id!); hideAlert(); onClose(); } },
                                             { text: "Отмена", status: "secondary", onClick: () => { hideAlert(); } },
                                         ],
                                     );
@@ -60,7 +82,6 @@ const TaskModal: React.FC<ITaskModal> = ({ task, onClose, onSwitchStatus, onUpda
                     </div>
                 );
             }
-
         }
         else{
             return (
@@ -70,7 +91,6 @@ const TaskModal: React.FC<ITaskModal> = ({ task, onClose, onSwitchStatus, onUpda
             );
         }
     }
-
 
     return (
         <motion.div style={styles.backdrop}
@@ -88,15 +108,15 @@ const TaskModal: React.FC<ITaskModal> = ({ task, onClose, onSwitchStatus, onUpda
             >
             {isEditing ? (
                 <TaskModalEditor
-                    task={task}
+                    task={currentTask}
                     renderButtons={renderButtons}
-                    onSwitchStatus={onSwitchStatus}
+                    onSwitchStatus={handleStatusChange} 
                 />
             ) : (
                 <TaskModalPreview
-                    task={task}
+                    task={currentTask}
                     renderButtons={renderButtons}
-                    onSwitchStatus={onSwitchStatus}    
+                    onSwitchStatus={handleStatusChange}
                 />
             )}
             </motion.div>

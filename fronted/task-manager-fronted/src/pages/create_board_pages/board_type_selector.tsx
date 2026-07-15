@@ -1,14 +1,15 @@
-import React, { useState } from "react";
-import { Zap, Building, X, Users, RefreshCw, Timer, ShieldCheck, BarChart3, ArrowRight, Plus } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Zap, Building, X, Users, RefreshCw, Timer, ShieldCheck, BarChart3, ArrowRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ProgressBar from "../../components/progress_bar";
 import FormInput from "../../components/form_input";
 import { DeadlinePicker } from "../../components/deadline_picker/deadline_picker";
-import type { IItemProps } from "../../components/list_items";
-import ListItems from "../../components/list_items";
 import MemberSelector from "../../components/selection_user";
-import { useBoard, type IBoardCreate, type IColumns, type IInvitedUser, TYPE_BOARD, type BoardTypeKind } from "../../hook/useBoards";
+import { useBoard, type IBoardCreate, type IColumns, type IInvitedUser, TYPE_BOARD, type BoardTypeKind, type IBoardMember, type ITimePoint } from "../../hook/useBoards";
 import DefaultButton from "../../components/default_button";
+import TimePointsFormManager from "../../components/time_points_form_manager";
+import { useAlert } from "../../context/alert_context";
+import ColumnsFormManager from "../../components/columns_selector/columns_manager";
 
 interface BoardTypeSelectorProps {
   onClose: () => void;
@@ -17,21 +18,36 @@ interface BoardTypeSelectorProps {
 
 export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, onSuccess }) => {
     const { createBoard } = useBoard();
-    
+    const { showAlert, hideAlert } = useAlert();
     const [step, setStep] = useState(0);
     const [selectedType, setSelectedType] = useState<BoardTypeKind | null>(null);
     const [animationDirection, setAnimationDirection] = useState<'next' | 'prev'>('next');
     
     const [title, setTitle] = useState("");
-    const [desc, setDescs] = useState("");
-    const [column, setColumn] = useState("");
-    const [selectedMembers, setSelectedMembers] = useState<IItemProps[]>([]);
+    const [desc, setDesc] = useState("");
+    
+    const [selectedMembers, setSelectedMembers] = useState<IBoardMember[]>([]);
+    const [timePoints, setTimePoints] = useState<ITimePoint[]>([]);
 
-    const startColumns = selectedType === TYPE_BOARD.hakaton
-    ? [{id: 0, name: 'Идеи'}, {id: 1, name: 'Задачи'}, {id: 2, name: 'В разработке'}, {id: 3, name: "Тестирование"}, {id: 4, name: 'Готово'}] 
-    : [{id: 0, name: 'К исполнению'}, {id: 1, name: 'В работе'}, {id: 2, name: 'Ревью'}, {id: 3, name: "Готово"}];
+    const getStartColumns = (type: BoardTypeKind | null): IColumns[] => {
+        if (type === TYPE_BOARD.hakaton) {
+            return [
+                { id: 0, name: 'Идеи', position: 0 }, 
+                { id: 1, name: 'Задачи', position: 1 }, 
+                { id: 2, name: 'В разработке', position: 2 }, 
+                { id: 3, name: "Тестирование", position: 3 }, 
+                { id: 4, name: 'Готово', position: 4 }
+            ];
+        }
+        return [
+            { id: 0, name: 'К исполнению', position: 0 }, 
+            { id: 1, name: 'В работе', position: 1 }, 
+            { id: 2, name: 'Ревью', position: 2 }, 
+            { id: 3, name: "Готово", position: 3 }
+        ]; 
+    };
 
-    const [columns, setColumns] = useState<IItemProps[]>(startColumns);
+    const [columns, setColumns] = useState<IColumns[]>(getStartColumns(selectedType));
     const [deadline, setDeadline] = useState<Date | null>(new Date());
 
     const onSelectType = (type: BoardTypeKind) => {
@@ -39,6 +55,10 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
         setAnimationDirection('next');
         setStep(1);
     };
+
+    useEffect(() => {
+        setColumns(getStartColumns(selectedType));
+    }, [selectedType]);
 
     const paramsTitle = [
         { title: "Новая доска", description: "Выберите тип пространства для вашей команды" },
@@ -64,16 +84,27 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
     };
 
     const onCreateBoard = async () => {
-        if (title.length === 0 || columns.length === 0 || !selectedType) return;
+        const activeColumns = columns.filter(col => col.name.trim().length > 0);
 
-        const formattedColumns: IColumns[] = columns.map((col, index) => ({
+        if (title.length === 0 || activeColumns.length === 0 || !selectedType) {
+            showAlert(
+                "Ошибка создания рабочего пространства",
+                "Пожалуйста, заполните все поля.",
+                [
+                    { text: "Окей", status: "secondary", onClick: () => { hideAlert(); } },
+                ],
+            );    
+            return;           
+        }
+
+        const formattedColumns: IColumns[] = activeColumns.map((col, index) => ({
             name: col.name.trim(),
-            position: index
+            position: index,
         }));
 
         const invitedMembers: IInvitedUser[] = selectedMembers.map(member => ({
             user_id: member.id,
-            role_id: 2
+            role_id: member.role?.id ?? 2
         }));
 
         const newBoard : IBoardCreate = {
@@ -82,12 +113,12 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
             columns: formattedColumns,
             deadline: deadline ? deadline.toISOString() : null,
             invited_users: invitedMembers,
-            description: desc
+            description: desc,
+            milestones: timePoints
         }
 
         await createBoard(newBoard);
         onSuccess();
-
         onClose();
     }
 
@@ -119,30 +150,6 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
         }
     };
 
-    const btnUIAdd = () => {
-        return(
-            <button
-                type="button"
-                onClick={btnAddColumn}
-                style={styles.inlineAddButton}
-            >
-                <Plus size={18} color="#ffffff" />
-            </button>
-        );
-    }
-
-    const btnAddColumn = () => {
-        if (!column.trim()) return;
-
-        const newColumn: IItemProps = {
-            id: columns.length,
-            name: column.trim()
-        }
-
-        setColumns([...columns, newColumn]);
-        setColumn("");
-    }
-
     const typeBoardSelection = () => {
         return (
             <motion.div
@@ -161,7 +168,7 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
                 >
                     <div style={styles.iconHakatonWrapper}><Zap size={24} color="#fff" /></div>
                     <h3 style={styles.cardTitle}>Хакатон доска</h3>
-                    <p style={styles.cardDescription}>Для краттковременных спринтов, соревнований и MVP.</p>
+                    <p style={styles.cardDescription}>Для кратковременных спринтов, соревнований и MVP.</p>
                     <div style={styles.featuresList}>
                         <div style={styles.featureItem}><Users size={14} style={styles.featureIcon} /> <span>Вместимость: <b>до 5 чел.</b></span></div>
                         <div style={styles.featureItem}><RefreshCw size={14} style={styles.featureIcon} /> <span>Онлайн обновление</span></div>
@@ -189,61 +196,71 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
     };
 
     const boardForm = (type : string) => {
-        if (type === TYPE_BOARD.hakaton) {
-            return (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                    <FormInput
-                        id="board-name"
-                        label="Название доски"
-                        type="text"
-                        value={title}
-                        onChange={setTitle}
-                        placeholder="Hakaton IT"
-                        required
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <FormInput
+                    id="board-name"
+                    label="Название доски"
+                    type="text"
+                    value={title}
+                    onChange={setTitle}
+                    placeholder={type === TYPE_BOARD.hakaton ? "Hakaton IT" : "Разработка ПО"}
+                    required
+                    maxLength={100}
+                />
+
+                <FormInput
+                    id="desc-board"
+                    label="Краткое описание"
+                    onChange={setDesc}
+                    value={desc}
+                    placeholder="Пару слов о доске..."
+                    type="textarea"
+                    maxLength={500}
+                />
+
+                <ColumnsFormManager
+                    columns={columns}
+                    onChange={setColumns}
+                />
+
+                {type === TYPE_BOARD.hakaton && (
+                    <>
+                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                            <label style={{ fontSize: "12px", fontWeight: 700, color: "#4b5563", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+                                Дедлайн проекта
+                            </label>
+                            <DeadlinePicker
+                                value={deadline} 
+                                onChange={setDeadline} 
+                            />
+                        </div>
+                        <div style={{ width: "100%", marginTop: "10px", marginBottom: "10px" }}>
+                            <TimePointsFormManager 
+                                boardDeadline={deadline}
+                                timePoints={timePoints} 
+                                onChange={setTimePoints} 
+                            />
+                        </div>
+                    </>
+                )}
+
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <MemberSelector
+                        selectedMembers={selectedMembers} 
+                        onMembersChange={setSelectedMembers}
                     />
-                    <ListItems
-                        items={columns}
-                        onItemChange={setColumns}
-                    />
-                    <div style={{display: 'flex', flexDirection: 'row', alignItems: 'end', gap: '10px'}}>
-                        <FormInput
-                            id="column-name"
-                            label="Название колонки"
-                            type="text"
-                            value={column}
-                            onChange={setColumn}
-                            placeholder="Тестирование"
-                            required
-                        />
-                        {btnUIAdd()}
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <label style={{ fontSize: "12px", fontWeight: 700, color: "#4b5563", letterSpacing: "0.08em", textTransform: "uppercase" }}>
-                            Дедлайн проекта
-                        </label>
-                        <DeadlinePicker
-                            value={deadline} 
-                            onChange={setDeadline} 
-                        />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                        <MemberSelector
-                            selectedMembers={selectedMembers} 
-                            onMembersChange={setSelectedMembers}
-                        />
-                    </div>
-                    
-                    <DefaultButton
-                        onClick={onCreateBoard}
-                        text="Создать пространство"
-                        fullWidth={true}
-                    />
-                    
-                    <div style = {{height: "20px"}}/>
                 </div>
-            );
-        }
-        return null;
+                
+                <DefaultButton
+                    onClick={onCreateBoard}
+                    text="Создать пространство"
+                    fullWidth={true}
+                />
+                
+                <div style={{height: "20px"}}/>
+            </div>
+        );
     };
 
     return (
@@ -305,9 +322,17 @@ const styles = {
         display: "flex",
         flexDirection: "column" as const,
         gap: "32px",
-        backgroundColor: "#ffffff",
         height: "100%",
         boxSizing: "border-box" as const,
+    },
+    textarea: {
+        padding: '12px',
+        borderRadius: '10px',
+        border: '1.5px solid #eee',
+        fontSize: '16px',
+        outline: 'none',
+        minHeight: '80px',
+        resize: 'none' as const,
     },
     closeButton: {
         position: "absolute" as const,
@@ -322,7 +347,7 @@ const styles = {
         alignItems: "center",
         justifyContent: "center",
         cursor: "pointer",
-        zIndex: 30
+        zIndex: 20
     },
     modalHeader: {
         display: "flex",
@@ -425,22 +450,5 @@ const styles = {
         display: 'flex',
         flexDirection: 'column' as const,
         gap: '6px',
-    },
-    inlineAddButton: {
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minHeight: "50px",
-        minWidth: "50px",
-        height: "50px",
-        width: "50px",
-        borderRadius: "12px",
-        backgroundColor: "#7177f4",
-        border: "none",
-        color: "#ffffff",
-        fontSize: "14px",
-        fontWeight: 600,
-        cursor: "pointer",
-        transition: "background-color 0.2s ease",
     }
 };

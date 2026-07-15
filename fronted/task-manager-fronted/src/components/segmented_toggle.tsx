@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { theme } from "../themes/themes";
 
 export interface IToggleOption {
     id: string;

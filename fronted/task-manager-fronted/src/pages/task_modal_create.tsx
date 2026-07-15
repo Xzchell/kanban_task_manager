@@ -1,57 +1,74 @@
 import { useEffect, useState } from "react";
 import DefaultButton from "../components/default_button";
 import { useAuth } from "../context/auth_context";
-import { type ICreateTaskData } from "../hook/useTasks";
 import { motion } from "framer-motion";
 import PriorityTaskContainer from "../components/priority_task_container";
 import RichTextEditor from "../components/rich_text_editor";
 import { useAlert } from '../context/alert_context';
 import TagSelector from "../components/tag_selector";
-import type { IExecutors, ITags } from "../components/task_card";
+import type { ITags } from "../components/task_card";
 import UserSelector from "../components/user_selector";
 import { useTags } from "../hook/useTags";
-import { useUsers } from "../hook/useUsers";
+import TextArea from "../components/text_area";
+import { ToggleSwitch } from "../components/switcher";
+import { DeadlinePicker } from "../components/deadline_picker/deadline_picker";
+import { useDesignMode } from "../context/design_context";
+import { theme } from "../themes/themes";
+import { useBoard } from "../hook/useBoards";
+import { TimePointSelector } from "../components/time_point_selector";
+import type { IBoardMember } from "../hook/useBoards";
+import { formatToSqlTimestamp } from "../utils/formatters";
+import FormInput from "../components/form_input";
 
 export interface ITaskModalCreate {
     onClose: () => void;
-    onCreate: (data: ICreateTaskData) => void;
 }
 
-const TaskModalCreate: React.FC<ITaskModalCreate> = ({ onClose, onCreate }) => {
+const TaskModalCreate: React.FC<ITaskModalCreate> = ({ onClose}) => {
     const user = useAuth().user;
     
-    const { allTags, fetchAllTags } = useTags(user?.id); 
-    const { allUsers, fetchAllUsers } = useUsers(user?.id, user?.role.permission_level);
+    const { selectedBoard, createTask } = useBoard();
 
+    const { allTags, fetchAllTags } = useTags(user?.id); 
     const [title, setTitle] = useState("");
     const [shortDesc, setShortDesc] = useState("");
     const [fullDesc, setFullDesc] = useState("");
     const [priority, setPriority] = useState(1);
-    const [localDeadline, setLocalDeadLine] = useState(new Date().toISOString().split('T')[0]);
-    const [selectedTags, setSelectedTags] = useState<ITags[]>([]);
-    const [selectedUsers, setSelectedUsers] = useState<IExecutors[]>([]);
 
+    const [deadline, setDeadline] = useState<Date | null>(selectedBoard?.type.name === "company" ? new Date() : null);
+    
+    const [selectedTags, setSelectedTags] = useState<ITags[]>([]);
+    const [selectedUsers, setSelectedUsers] = useState<IBoardMember[]>([]);
+    const availableBoardUsers = selectedBoard?.users || [];
+
+    const [isMvp, setIsMvp] = useState<boolean>(false);
+    const [selectedIdTimePoint, setSelectedIdTimePoint] = useState<number | null>(null);
     const { showAlert, hideAlert } = useAlert();
 
     useEffect(() => {fetchAllTags();}, [fetchAllTags]);
-    useEffect(() => {fetchAllUsers();}, [fetchAllUsers]);
 
-    const handleSubmit = () => {
-        if (!title.trim()) return alert("Введите название!");
-        
-        onCreate({
+
+    const handleSubmit = async () => {
+        createTask({
             title,
             short_desc: shortDesc,
             full_desc: fullDesc,
             status: 1,
             priority: priority,
             author_id: user?.id || 0,
-            deadline: new Date(localDeadline).toISOString(),
+            deadline: formatToSqlTimestamp(deadline),
             tags: selectedTags,
             executors: selectedUsers,
+            isMvp: isMvp,
+            time_point_id: selectedIdTimePoint
         });
+        console.log(selectedIdTimePoint);
         onClose();
     };
+
+    const { mode } = useDesignMode();
+    const currentMode = theme.modes[mode];
+    
     return (
         <motion.div 
             style={styles.backdrop}
@@ -61,7 +78,7 @@ const TaskModalCreate: React.FC<ITaskModalCreate> = ({ onClose, onCreate }) => {
             onClick={onClose} 
         >
             <motion.div 
-                style={styles.modal}
+                style={{...styles.modal, ...currentMode.card, backgroundColor: "rgba(255, 255, 255, 0.93)", }}
                 initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
@@ -71,34 +88,56 @@ const TaskModalCreate: React.FC<ITaskModalCreate> = ({ onClose, onCreate }) => {
                 
                 <div style={styles.formContainer}>
                     <div style={styles.form}>
-                        <label style={styles.label}>Название</label>
-                        <input 
-                            style={styles.input} 
+                        <FormInput
+                            id="title-task"
+                            label="Название"
+                            onChange={setTitle}
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
-                            placeholder="Что нужно сделать?"
+                            placeholder="Тема задачи..."
+                            type="text"
+                            maxLength={100}
                         />
 
-                        <label style={styles.label}>Краткое описание</label>
-                        <textarea 
-                            style={styles.textarea} 
+                        <FormInput
+                            id="title-task"
+                            label="Краткое описание"
+                            onChange={setShortDesc}
                             value={shortDesc}
-                            onChange={(e) => setShortDesc(e.target.value)}
-                            placeholder="Пара слов о задаче..."
+                            placeholder="Пару слов о задаче..."
+                            type="textarea"
+                            maxLength={500}
+                        />
+
+                        <ToggleSwitch 
+                            label="Это MVP задача" 
+                            checked={isMvp} 
+                            onChange={setIsMvp} 
                         />                        
-                        
                         <label style={styles.label}>Выбор приоритета</label>
                         <PriorityTaskContainer priority={priority} onPriorityChange={setPriority} />
                         
                         <label style={styles.label}>Выбор дедлайна</label>
-                        
-                        <input 
-                            type="date"
-                            style={styles.dateInput}
-                            value={localDeadline}
-                            onChange={(e) => setLocalDeadLine(e.target.value)}
-                        />
 
+                        {
+                            selectedBoard?.type.name === "company" &&
+
+                            <DeadlinePicker
+                                value={deadline} 
+                                onChange={setDeadline} 
+                            />
+                        }
+
+                        {
+                            (selectedBoard?.timePoints?.length ?? 0) > 0 && (
+                            <>
+                                <TimePointSelector
+                                    onChange={(id: number | null) => setSelectedIdTimePoint(id)}
+                                    selectedId={selectedIdTimePoint ?? 0}
+                                    timePoints={selectedBoard?.timePoints ?? []}
+                                />
+                            </>
+                            )
+                        }
                         <label style={styles.label}>Теги (* - все теги)</label>
                         <TagSelector 
                             availableTags={allTags}
@@ -108,9 +147,10 @@ const TaskModalCreate: React.FC<ITaskModalCreate> = ({ onClose, onCreate }) => {
 
                         <label style={styles.label}>Пользователи (* - все пользователи)</label>
                         <UserSelector 
-                            availableUsers={allUsers}
+                            availableUsers={availableBoardUsers}
                             selectedUsers={selectedUsers}
-                            onUsersChange={setSelectedUsers}
+                            onUsersChange={(users) => setSelectedUsers(users)}
+                            small={false}
                         />
 
                         <label style={styles.label}>Полное описание</label>
@@ -169,7 +209,7 @@ const styles = {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 900,
+        zIndex: 100,
     },
     modal: {
         backgroundColor: '#fff',
@@ -215,15 +255,6 @@ const styles = {
         border: '1.5px solid #eee',
         fontSize: '16px',
         outline: 'none',
-    },
-    textarea: {
-        padding: '12px',
-        borderRadius: '10px',
-        border: '1.5px solid #eee',
-        fontSize: '16px',
-        outline: 'none',
-        minHeight: '80px',
-        resize: 'none' as const,
     },
     actions: {
         display: 'flex',

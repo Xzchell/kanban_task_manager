@@ -8,6 +8,7 @@ interface IListItemProps {
 export interface IItemProps {
     id: number;
     name: string;
+    role_id?: number;
 }
 
 const ListItems: React.FC<IListItemProps> = ({ items, onItemChange }) => {

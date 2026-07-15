@@ -9,14 +9,14 @@ use PHPMailer\PHPMailer\Exception;
 
 
 class AuthService{
-    private $pdo; 
+    private PDO $pdo; 
 
-    public function __construct($pdo)
+    public function __construct(PDO $pdo)
     {
         $this-> pdo = $pdo;
     }
 
-    public function login($email, $password){
+    public function login(string $email, string $password){
         if (empty($email) || empty($password)) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Заполните все поля"], JSON_UNESCAPED_UNICODE);
@@ -24,14 +24,11 @@ class AuthService{
         }
 
         $sql = "SELECT 
-                    u.id, u.first_name, u.last_name, u.middle_name, 
-                    u.birth_date as birthday, u.username, u.email, u.password as password_hash,
-                    r.id as role_id, r.permission_level, r.display_name as role_name, 
-                    r.description as role_description, r.background_color, r.text_color,
-                    u.is_verified
-                FROM users u 
-                LEFT JOIN roles r ON u.id_role = r.id 
-                WHERE u.email = ? OR u.username = ?"; 
+                    id, first_name, last_name, middle_name, 
+                    birth_date as birthday, username, email, password as password_hash,
+                    is_verified
+                FROM users 
+                WHERE email = ? OR username = ?"; 
                 
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute([$email, $email]);
@@ -56,15 +53,7 @@ class AuthService{
                 "middle_name" => $userRow['middle_name'],
                 "birthday" => $userRow['birthday'],
                 "username" => $userRow['username'],
-                "email" => $userRow['email'],
-                "role" => [
-                    "id" => (int)$userRow['role_id'],
-                    "role_name" => $userRow['role_name'],
-                    "permission_level" => (int)$userRow['permission_level'],
-                    "description" => $userRow['role_description'],
-                    "background_color" => $userRow['background_color'],
-                    "text_color" => $userRow['text_color']
-                ]
+                "email" => $userRow['email']
             ];
 
             setcookie(
@@ -93,7 +82,7 @@ class AuthService{
         }
     }
 
-    public function register($username, $email, $fullName, $birthDate, $password) {
+    public function register(string $username, string $email, string $fullName, string $birthDate, string $password) {
         if (empty($username) || empty($email) || empty($fullName) || empty($password) || empty($birthDate)){
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Заполните все поля"], JSON_UNESCAPED_UNICODE);
@@ -146,7 +135,7 @@ class AuthService{
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function resendCode($email) {
+    public function resendCode(string $email) {
         if (empty($email)) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Email обязателен"], JSON_UNESCAPED_UNICODE);
@@ -189,7 +178,7 @@ class AuthService{
         ], JSON_UNESCAPED_UNICODE);
     }
     
-    private function sendEmailNotification($email, $fullName, $code) {
+    private function sendEmailNotification(string $email, string $fullName, string $code) {
         $mail = new PHPMailer(true);
 
         try {
@@ -235,7 +224,7 @@ class AuthService{
         }
     }
 
-    public function verifyCode($email, $code) {
+    public function verifyCode(string $email, string $code) {
         if (empty($email) || empty($code)) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Email и код обязательны"], JSON_UNESCAPED_UNICODE);
@@ -340,7 +329,7 @@ class AuthService{
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function logout($token){
+    public function logout(string $token){
         if(!empty($token)){
             $stmt = $this->pdo->prepare("DELETE FROM user_sessions WHERE token = ?");
             $stmt->execute([$token]);
@@ -361,7 +350,7 @@ class AuthService{
 }
 
 
-function authActions($pdo, $action) {
+function authActions(PDO $pdo, string $action) {
     $authService = new AuthService($pdo);
     $inputData = json_decode(file_get_contents('php://input'), true) ?? [];
 

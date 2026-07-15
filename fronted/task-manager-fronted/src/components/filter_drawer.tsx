@@ -1,38 +1,57 @@
-import { motion, AnimatePresence } from "framer-motion";
+
+import { motion } from "framer-motion";
 import React from "react";
 import type { ISortConfig } from "../hook/useTasks";
+import { useDesignMode } from "../context/design_context";
+import { theme } from "../themes/themes";
+import { ToggleSwitch } from "./switcher";
 
 export interface IFilterDrawer {
-    isOpen: boolean;
     onClose: () => void;
     sortConfig: ISortConfig;
     setSortConfig: (config: ISortConfig) => void;
 }
 
-const FilterDrawer: React.FC<IFilterDrawer> = ({ isOpen, onClose, sortConfig, setSortConfig }) => {
+const FilterDrawer: React.FC<IFilterDrawer> = ({ onClose, sortConfig, setSortConfig }) => {
+    const { mode } = useDesignMode();
+    const currentMode = theme.modes[mode];
+    
+    let isMvp = sortConfig.isMvpOnly;
+    let iAmExecutor = sortConfig.iAmExecutor;
+
+    const setIsMvp = (value : boolean) => {
+        isMvp = value;
+        setSortConfig({ ...sortConfig, isMvpOnly: value})
+    }
+
+    const setIAmExecutor = (value : boolean) => {
+        iAmExecutor = value;
+        setSortConfig({ ...sortConfig, iAmExecutor})
+    }
+
     return (
-        <AnimatePresence>
-            {isOpen && (
+        <>
+            <motion.div 
+                style={drawerStyles.backdrop}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={onClose}
+            >
                 <motion.div 
-                    style={drawerStyles.backdrop}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={onClose}
+                    style={drawerStyles.panel}
+                    initial={{ x: "100%" }} 
+                    animate={{ x: 0 }}
+                    exit={{ x: "100%" }}
+                    transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                    onClick={(e) => e.stopPropagation()}
                 >
-                    <motion.div 
-                        style={drawerStyles.panel}
-                        initial={{ x: "100%" }} 
-                        animate={{ x: 0 }}
-                        exit={{ x: "100%" }}
-                        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div style={drawerStyles.header}>
-                            <h2 style={{ margin: 0, fontSize: '22px' }}>Фильтрация</h2>
-                            <button onClick={onClose} style={drawerStyles.closeBtn}>✕</button>
-                        </div>
-                            <div style={drawerStyles.section}>
+                    <div style={drawerStyles.header}>
+                        <h2 style={{ margin: 0, fontSize: '22px' }}>Фильтрация</h2>
+                        <button onClick={onClose} style={drawerStyles.closeBtn}>✕</button>
+                    </div>
+                    
+                    <div style={drawerStyles.section}>
                                 <p style={drawerStyles.sectionTitle}>Сортировка по алфавиту</p>
                                 <div style={drawerStyles.optionGroup}>
                                     <button 
@@ -77,12 +96,23 @@ const FilterDrawer: React.FC<IFilterDrawer> = ({ isOpen, onClose, sortConfig, se
                                     </button>
                                 </div>
                             </div>
-                            {/* Сюда позже добавим теги и исполнителей в таком же стиле */}
+                                <p style={drawerStyles.sectionTitle}>isMvp задача</p>
+                                <ToggleSwitch
+                                    onChange={setIsMvp}
+                                    checked = {sortConfig.isMvpOnly}
+                                    label="Фильтр по MVP"
+                                />
+
+                                <p style={drawerStyles.sectionTitle}>Я исполнитель</p>
+                                <ToggleSwitch
+                                    onChange={setIAmExecutor}
+                                    checked = {sortConfig.iAmExecutor}
+                                    label="Задачи, где я исполнитель"
+                                />
                         </div>
-                    </motion.div>
                 </motion.div>
-            )}
-        </AnimatePresence>
+            </motion.div>
+        </>
     );
 };
 

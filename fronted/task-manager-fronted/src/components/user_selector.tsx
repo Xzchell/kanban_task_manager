@@ -1,11 +1,12 @@
-import React, { useState, useMemo,} from 'react';
+import React, { useState, useMemo } from 'react';
 import { X, Search, User } from 'lucide-react';
-import type { IExecutors } from './task_card';
+import type { IBoardMember } from '../hook/useBoards';
+import { useAuth } from '../context/auth_context';
 
 interface IUserSelectorProps {
-    availableUsers: IExecutors[]; 
-    selectedUsers: IExecutors[];
-    onUsersChange: (users: IExecutors[]) => void;
+    availableUsers: IBoardMember[];
+    selectedUsers: IBoardMember[];
+    onUsersChange: (users: IBoardMember[]) => void;
     small?: boolean;
 }
 
@@ -13,17 +14,31 @@ const UserSelector: React.FC<IUserSelectorProps> = ({ availableUsers, selectedUs
     const [query, setQuery] = useState('');
     const [isOpen, setIsOpen] = useState(false);
 
+    const userId = useAuth().user?.id;
+
     const filtered = useMemo(() => {
-        return availableUsers.filter(user => {
-            const isNotSelected = !selectedUsers.some(s => s.id === user.id);
-            const matchesQuery = query === '*' || `${user.first_name} ${user.last_name}`.toLowerCase().includes(query.toLowerCase());
-            return isNotSelected && matchesQuery;
+        const usersList = availableUsers || [];
+        const selectedList = selectedUsers || [];
+
+        return usersList.filter(user => {
+            const isNotSelected = !selectedList.some(s => s.id === user.id);
+            
+            const firstName = user.first_name || '';
+            const lastName = user.last_name || '';
+            const fullName = `${firstName} ${lastName}`.toLowerCase();
+            const email = user.email || '';
+            const username = user.username || '';
+            
+            const matchesQuery = query === '*' || fullName.includes(query.toLowerCase()) || email.includes(query.toLowerCase()) || username.includes(query.toLowerCase());
+            
+            return isNotSelected && matchesQuery && user.id != userId;
         });
     }, [availableUsers, selectedUsers, query]);
 
-    const addUser = (user: IExecutors) => {
+    const addUser = (user: IBoardMember) => {
         onUsersChange([...selectedUsers, user]);
         setQuery('');
+        setIsOpen(false); 
     };
 
     const removeUser = (userId: number) => {
@@ -32,33 +47,40 @@ const UserSelector: React.FC<IUserSelectorProps> = ({ availableUsers, selectedUs
 
     return (
         <div style={userSelectorStyles.container}>
-            
+            {/* Список уже выбранных исполнителей */}
             <div style={userSelectorStyles.userList}>
-                {selectedUsers.map(user => (
+                {selectedUsers && selectedUsers.map(user => (
                     <span key={user.id} style={{
                         ...userSelectorStyles.activeUser, 
                         backgroundColor: '#f9f9f9', 
                         color: '#333',
                         border: `1px solid #ccc`,
                     }}>
-                        {user.first_name} {user.last_name}
-                        <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeUser(user.id)} />
+                        {user.first_name} {user.last_name} | {user.username}
+                        <X 
+                            size={14} 
+                            style={{ cursor: 'pointer', marginLeft: '4px' }} 
+                            onClick={() => removeUser(user.id)} 
+                        />
                     </span>
                 ))}
             </div>
 
+            {/* Поле поиска */}
             <div style={userSelectorStyles.searchWrapper}>
                 <div style={userSelectorStyles.inputContainer}>
                     <Search size={16} color="#828282" />
                     <input 
                         style={userSelectorStyles.input}
-                        placeholder="Поиск пользователей..."
+                        placeholder="Поиск исполнителей..."
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onFocus={() => setIsOpen(true)}
+                        onBlur={() => setTimeout(() => setIsOpen(false), 200)}
                     />
                 </div>
 
+                {/* Выпадающий список результатов поиска */}
                 {isOpen && query && (
                     <div style={userSelectorStyles.dropdown}>
                         {filtered.length > 0 ? filtered.map(user => (
@@ -67,18 +89,17 @@ const UserSelector: React.FC<IUserSelectorProps> = ({ availableUsers, selectedUs
                                 onClick={() => addUser(user)}
                                 style={userSelectorStyles.dropdownItem}
                             >
+                                <User size={16} color="#828282" />
                                 {small ? (
                                     <>
-                                        <User size={16} color="#828282" />
-                                        <span>{user.first_name} {user.last_name} | {user.role?.name || "Пользователь"}</span>
+                                        <span>{user.first_name} {user.last_name} | {user.username}</span>
                                     </>
                                 ) : (
                                     <>
-                                        <User size={16} color="#828282" />
-                                        <span>{user.first_name} {user.last_name} {user.middle_name}</span>
+                                        <span>{user.first_name} {user.last_name} {user.middle_name || ''}</span>
                                         <div style={userSelectorStyles.divider} />
-                                        <span>{user.role?.name || "Пользователь"}</span>
-                                        <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#aaa' }}>{user.email}</div>
+                                        <span>{user.role?.displayName}</span>
+                                        <div style={{ marginLeft: 'auto', fontSize: '12px', color: '#aaa' }}>{user.username} | {user.email}</div>
                                     </>
                                 )}
                             </div>

@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { EyeIcon, EyeOff } from "lucide-react";
+import { useDesignMode } from "../context/design_context";
+import { theme } from "../themes/themes";
 
-export interface FormInputProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
+export interface FormInputProps extends Omit<React.AllHTMLAttributes<HTMLInputElement | HTMLTextAreaElement>, "type" | "value" | "onChange"> {
     id: string;
     label: string;
-    type: "text" | "email" | "password" | "date-time" | "date-only";
+    type: "text" | "email" | "password" | "date-time" | "date-only" | "textarea";
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
@@ -12,7 +14,95 @@ export interface FormInputProps extends Omit<React.InputHTMLAttributes<HTMLInput
     containerStyle?: React.CSSProperties;
     labelStyle?: React.CSSProperties;
     inputStyle?: React.CSSProperties;
+    rows?: number;
 }
+
+const FormInput: React.FC<FormInputProps> = ({ 
+    id, 
+    label, 
+    type, 
+    value, 
+    onChange, 
+    placeholder, 
+    helperText, 
+    containerStyle, 
+    labelStyle, 
+    inputStyle, 
+    rows = 3,
+    ...inputProps 
+}) => {
+    const [showPassword, setShowPassword] = useState(false);
+    const { mode } = useDesignMode();
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    const isPassword = type === "password";
+    const isTextArea = type === "textarea";
+    const actualType = isPassword ? (showPassword ? "text" : "password") : "text";
+
+    useEffect(() => {
+        if (isTextArea && textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+    }, [value, isTextArea]);
+
+    const combinedInputStyle = {
+        ...defaultStyles.input,
+        ...theme.modes[mode].formInput,
+        paddingRight: isPassword ? "44px" : "18px",
+        ...(isTextArea ? defaultStyles.textareaAdditional : {}),
+        ...inputStyle
+    };
+
+    return (
+        <div style={{ ...defaultStyles.container, ...containerStyle }}>
+            <label htmlFor={id} style={{ ...defaultStyles.label, color: theme.colors.text.secondary, ...labelStyle }}>
+                {label}
+            </label>
+            <div style={defaultStyles.inputWrapper}>
+                {isTextArea ? (
+                    <textarea
+                        id={id}
+                        ref={textareaRef}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        rows={rows}
+                        style={combinedInputStyle as React.CSSProperties}
+                        {...(inputProps as React.TextareaHTMLAttributes<HTMLTextAreaElement>)}
+                    />
+                ) : (
+                    <input
+                        id={id}
+                        type={actualType}
+                        value={value}
+                        onChange={(e) => onChange(e.target.value)}
+                        placeholder={placeholder}
+                        style={combinedInputStyle}
+                        {...(inputProps as React.InputHTMLAttributes<HTMLInputElement>)}
+                    />
+                )}
+                
+                {isPassword && (
+                    <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        style={defaultStyles.eyeButton}
+                    >
+                        {showPassword ? (
+                            <EyeOff size={18} color={theme.colors.text.muted} />
+                        ) : (
+                            <EyeIcon size={18} color={theme.colors.text.muted} />
+                        )}
+                    </button>
+                )}
+            </div>
+            {helperText && <span style={{ ...defaultStyles.helperText, color: theme.colors.text.muted }}>{helperText}</span>}
+        </div>
+    );
+};
+
+export default FormInput;
 
 const defaultStyles = {
     container: {
@@ -24,7 +114,6 @@ const defaultStyles = {
     label: {
         fontSize: "12px",
         fontWeight: 700,
-        color: "#4b5563",
         letterSpacing: "0.08em",
         textTransform: "uppercase" as const,
     },
@@ -36,13 +125,16 @@ const defaultStyles = {
         width: "100%",
         padding: "16px 18px",
         borderRadius: "18px",
-        border: "1px solid #e5e7eb",
-        background: "rgba(248, 249, 255, 0.7)",
         fontSize: "15px",
-        color: "#111827",
         outline: "none",
-        transition: "border-color 0.2s, box-shadow 0.2s",
+        transition: "border-color 0.2s, box-shadow 0.2s, background-color 0.3s ease, border 0.3s ease",
         boxSizing: "border-box" as const,
+    },
+    textareaAdditional: {
+        minHeight: "80px",
+        resize: "none" as const,
+        fontFamily: "inherit",
+        overflowY: "hidden" as const,
     },
     eyeButton: {
         position: "absolute" as const,
@@ -59,54 +151,5 @@ const defaultStyles = {
     },
     helperText: {
         fontSize: "13px",
-        color: "#6b7280",
     },
 };
-
-const FormInput: React.FC<FormInputProps> = ({ id, label, type, value, onChange, placeholder, helperText, containerStyle, labelStyle, inputStyle, ...inputProps }) => {
-    const [showPassword, setShowPassword] = useState(false);
-    
-    const isPassword = type === "password";
-    const actualType = isPassword ? (showPassword ? "text" : "password") : "text";
-
-    const combinedInputStyle = {
-        ...defaultStyles.input,
-        paddingRight: isPassword ? "44px" : "18px",
-        ...inputStyle
-    };
-
-    return (
-        <div style={{ ...defaultStyles.container, ...containerStyle }}>
-            <label htmlFor={id} style={{ ...defaultStyles.label, ...labelStyle }}>
-                {label}
-            </label>
-            <div style={defaultStyles.inputWrapper}>
-                <input
-                    id={id}
-                    type={actualType}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder={placeholder}
-                    style={combinedInputStyle}
-                    {...inputProps}
-                />
-                {isPassword && (
-                    <button
-                        type="button"
-                        onClick={() => setShowPassword((prev) => !prev)}
-                        style={defaultStyles.eyeButton}
-                    >
-                        {showPassword ? (
-                            <EyeOff size={18} color="#6b7280" />
-                        ) : (
-                            <EyeIcon size={18} color="#6b7280" />
-                        )}
-                    </button>
-                )}
-            </div>
-            {helperText && <span style={defaultStyles.helperText}>{helperText}</span>}
-        </div>
-    );
-};
-
-export default FormInput;
