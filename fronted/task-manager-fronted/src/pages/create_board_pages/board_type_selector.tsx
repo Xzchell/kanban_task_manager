@@ -169,11 +169,6 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
                     <div style={styles.iconHakatonWrapper}><Zap size={24} color="#fff" /></div>
                     <h3 style={styles.cardTitle}>Хакатон доска</h3>
                     <p style={styles.cardDescription}>Для кратковременных спринтов, соревнований и MVP.</p>
-                    <div style={styles.featuresList}>
-                        <div style={styles.featureItem}><Users size={14} style={styles.featureIcon} /> <span>Вместимость: <b>до 5 чел.</b></span></div>
-                        <div style={styles.featureItem}><RefreshCw size={14} style={styles.featureIcon} /> <span>Онлайн обновление</span></div>
-                        <div style={styles.featureItem}><Timer size={14} style={styles.featureIcon} /> <span>Таймер дедлайна</span></div>
-                    </div>
                 </motion.div>
 
                 <motion.div
@@ -185,11 +180,6 @@ export const BoardTypeSelector: React.FC<BoardTypeSelectorProps> = ({ onClose, o
                     <div style={styles.iconBusinessWrapper}><Building size={24} color="#fff" /></div>
                     <h3 style={styles.cardTitle}>Бизнес доска</h3>
                     <p style={styles.cardDescription}>Для долгосрочных проектов и регулярных задач компании.</p>
-                    <div style={styles.featuresList}>
-                        <div style={styles.featureItem}><Users size={14} style={styles.featureIconBiz} /> <span>Вместимость: <b>до 20 чел.</b></span></div>
-                        <div style={styles.featureItem}><ShieldCheck size={14} style={styles.featureIconBiz} /> <span>Роли и доступы</span></div>
-                        <div style={styles.featureItem}><BarChart3 size={14} style={styles.featureIconBiz} /> <span>Спринт-отчёты</span></div>
-                    </div>
                 </motion.div>
             </motion.div>
         );

@@ -1,17 +1,20 @@
 import { defineConfig } from 'vite'
 import react, { reactCompilerPreset } from '@vitejs/plugin-react'
 import babel from '@rolldown/plugin-babel'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react(),
-    babel({ presets: [reactCompilerPreset()] })
+    babel({ presets: [reactCompilerPreset()] }),
+    basicSsl()
   ],
+  server: {
+    port: 5173
+  },
   build: {
-    // Указываем путь относительно папки frontend
-    // ../ указывает на выход из frontend в корень, а затем в папку назначения
     outDir: '../build', 
-    emptyOutDir: true, // Vite очистит папку перед новой сборкой
+    emptyOutDir: true, 
   }
 })

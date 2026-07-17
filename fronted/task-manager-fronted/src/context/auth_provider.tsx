@@ -35,14 +35,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (data.success) {
                 const userData: IUser = {
                     id: Number(data.user_data['id']),
-                    role: {
-                        id: Number(data.user_data['role']?.['id'] ?? 0),
-                        permission_level: Number(data.user_data['role']?.['permission_level'] ?? 0),
-                        name: data.user_data['role']?.['role_name'] ?? 'Пользователь',
-                        description: data.user_data['role']?.['description'] ?? '',
-                        background_color: data.user_data['role']?.['background_color'] ?? '#e2e8f0',
-                        color: data.user_data['role']?.['text_color'] ?? '#475569'
-                    },
                     first_name: data.user_data['first_name'],
                     last_name: data.user_data['last_name'],
                     middle_name: data.user_data['middle_name'],
@@ -128,14 +120,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             if (data.success) {
                 const userData: IUser = {
                     id: Number(data.user_data['id']),
-                    role: {
-                        id: Number(data.user_data['role']?.['id'] ?? 0),
-                        permission_level: Number(data.user_data['role']?.['permission_level'] ?? 0),
-                        name: data.user_data['role']?.['role_name'] ?? 'Пользователь',
-                        description: data.user_data['role']?.['description'] ?? '',
-                        background_color: data.user_data['role']?.['background_color'] ?? '#e2e8f0',
-                        color: data.user_data['role']?.['text_color'] ?? '#475569'
-                    },
                     first_name: data.user_data['first_name'],
                     last_name: data.user_data['last_name'],
                     middle_name: data.user_data['middle_name'],
@@ -162,6 +146,85 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         }
     };
 
+    const resetPasswordConfirm = async (email: string, password: string) => {
+        try {
+            const response = await api.post('', 
+                { 
+                    email: email, 
+                    password: password 
+                },
+                { 
+                    params: { endpoint: 'auth', action: 'update_password' } 
+                }
+            );
+
+            const data = response.data;
+
+            if (data.success) {
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (error: any) {
+            if (error.response && error.response.data) {
+                return { success: false, message: error.response.data.message };
+            }
+            return { success: false, message: "Ошибка при сохранении нового пароля" };
+        }
+    };
+
+    const sendResetPasswordCode = async (email: string) => {
+        try {
+            const response = await api.post('', 
+                { 
+                    email: email,
+                    isPasswordReset: true
+                },
+                { params: { endpoint: 'auth', action: 'resend_code' } }
+            );
+
+            const data = response.data;
+
+            if (data.success) {
+                return { success: true, message: data.message };
+            }
+            return { success: false, message: data.message };
+        } catch (error: any) {
+            if (error.response && error.response.data) {
+                return { success: false, message: error.response.data.message };
+            }
+            return { success: false, message: "Ошибка при повторной отправке кода" };
+        }
+    };
+
+    const verifyResetPasswordCode = async (email: string, code: string) => {
+        try {
+            const response = await api.post('', 
+                { 
+                    email: email, 
+                    code: code,
+                    isPasswordReset: true 
+                },
+                { 
+                    params: { endpoint: 'auth', action: 'verify' } 
+                } 
+            );
+
+            const data = response.data;
+
+            if (data.success) {
+                return { success: true };
+            } else {
+                console.log(data.message);
+                return { success: false, message: data.message };
+            }
+        } catch (error: any) {
+            if (error.response && error.response.data) {
+                return { success: false, message: error.response.data.message };
+            }
+            return { success: false, message: "Ошибка верификации кода" };
+        }
+    };
+
     const logout = async () => {
         
         await api.post('', {},
@@ -174,8 +237,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         navigate('/login');
     };
 
+    const getOtherSessions = async () => {
+        try {
+            const response = await api.post('', {}, { 
+                params: { endpoint: 'sessions', action: 'get_other_sessions' } 
+            });
+            return response.data;
+        } catch (error: any) {
+            return { success: false, message: error.response?.data?.message || "Ошибка загрузки сессий" };
+        }
+    };
+
+    const revokeSession = async (sessionId: number) => {
+        try {
+            const response = await api.post('', { sessionId }, { 
+                params: { endpoint: 'sessions', action: 'revoke_session' } 
+            });
+            return response.data;
+        } catch (error: any) {
+            return { success: false, message: error.response?.data?.message || "Ошибка удаления сессии" };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, isAuth, login, logout, register, verifyRegisterCode, resendRegisterCode }}>
+        <AuthContext.Provider value={{revokeSession, getOtherSessions, user, isAuth, login, resetPasswordConfirm, sendResetPasswordCode, verifyResetPasswordCode, logout, register, setUser, verifyRegisterCode, resendRegisterCode }}>
             {children}
         </AuthContext.Provider>
     );

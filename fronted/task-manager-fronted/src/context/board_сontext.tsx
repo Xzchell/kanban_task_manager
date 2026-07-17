@@ -105,7 +105,7 @@ export const BoardProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                     },
                 }
             );
-            if (response.data?.status === "success") {
+            if (response.data?.success === "success") {
                 await fetchBoards();
                 setError(null);
             }
@@ -143,6 +143,7 @@ export const BoardProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, [user?.id]);
 
+
     const updateBoardDetails = useCallback(async (dataBoard: IBoard) => {
         if (!user?.id) return;
         try {
@@ -159,16 +160,18 @@ export const BoardProvider: React.FC<{ children: React.ReactNode }> = ({ childre
                 }
             );
             if (response.data?.success === true) {
-                setSelectedBoard(dataBoard);
+                const updatedBoardFromServer = response.data.board;
+
+                setSelectedBoard(updatedBoardFromServer);
                 
                 setBoards((prevBoards) => 
-                    prevBoards.map((b) => b.id === dataBoard.id ? dataBoard : b)
+                    prevBoards.map((b) => b.id === updatedBoardFromServer.id ? updatedBoardFromServer : b)
                 );
 
                 if (socket) {
                     socket.emit('update_board', {
-                        boardId: dataBoard.id,
-                        boardData: dataBoard
+                        boardId: updatedBoardFromServer.id,
+                        boardData: updatedBoardFromServer
                     });
                 }
             }

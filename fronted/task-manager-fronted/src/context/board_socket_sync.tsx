@@ -71,9 +71,11 @@ useEffect(() => {
     socket.on('remove_board_member_broadcast', (data) => {
         if (data) {
             removeBoardMember(data);
-            if(user?.id === data){
+            console.log("removeBoardMember");
+            if(user?.id && Number(user?.id) === Number(data)){
                 resetDataBoard();
                 navigate('/boards'); 
+                console.log("navigate boards");
             }
         }
     });
@@ -113,7 +115,7 @@ useEffect(() => {
         socket.off('update_board_broadcast');
         socket.off('delete_board_broadcast');
     };
-}, [socket, selectedBoardId, selectedBoard, socketMoveTask, socketUpdateTask, socketCreateTask, socketDeleteTask, changeUserRole, resetDataBoard]);
+}, [navigate, user?.id, removeBoardMember, socket, selectedBoardId, selectedBoard, socketMoveTask, socketUpdateTask, socketCreateTask, socketDeleteTask, changeUserRole, resetDataBoard]);
 
     return <>{children}</>;
 };

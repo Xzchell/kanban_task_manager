@@ -78,26 +78,16 @@ const BoardMembersPage: React.FC = () => {
                     displayName: item.role?.id === 1 ? "Владелец" : item.role?.id === 3 ? "Наблюдатель" : "Участник",
                     permission_level: item.role?.id === 1 ? 3 : item.role?.id === 3 ? 1 : 2
                 }
-            }));
+        }));
 
         if (newBoardUsers.length === 0) {
             setIsAddModalOpen(false);
             return;
         }
 
-        const isSaved = await addBoardMembersBD(newBoardUsers);
-
-        if (isSaved) {
-            setSelectedBoard({
-                ...selectedBoard,
-                users: [...currentUsers, ...newBoardUsers]
-            });
-
-            setIsAddModalOpen(false);
-            setSelectedMembersToAdd([]);
-        } else {
-            console.error("Не удалось сохранить участников на сервере");
-        }
+        addBoardMembersBD(newBoardUsers);
+        setIsAddModalOpen(false);
+        setSelectedMembersToAdd([]);
     };
 
 

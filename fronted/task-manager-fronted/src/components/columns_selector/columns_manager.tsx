@@ -22,15 +22,11 @@ export const ColumnsFormManager: React.FC<IColumnsFormManagerProps> = ({ columns
     };
 
     const handleRemoveColumn = (indexToRemove: number) => {
-        const filtered = columns.filter((_, index) => index !== indexToRemove);
-        
-        const reindexed = filtered.map((col, index) => ({
-        ...col,
-        id: index,
-        position: index
+        const updated = columns.filter((_, index) => index !== indexToRemove).map((col, index) => ({
+            ...col,
+            position: index
         }));
-        
-        onChange(reindexed);
+        onChange(updated);
     };
 
     const handleNameChange = (indexToUpdate: number, newName: string) => {
@@ -80,7 +76,6 @@ export const ColumnsFormManager: React.FC<IColumnsFormManagerProps> = ({ columns
             <div style={styles.list}>
             {columns.map((col, index) => {
                 const currentId = col.position; 
-
                 return (
                 <div key={`col-${currentId}`} style={styles.row}>
                     <div style={styles.inputWrapper}>
@@ -113,8 +108,13 @@ export const ColumnsFormManager: React.FC<IColumnsFormManagerProps> = ({ columns
                     <button
                     type="button"
                     onClick={() => handleRemoveColumn(index)}
-                    style={styles.deleteButton}
                     title="Удалить колонку"
+                    disabled={columns.length <= 1}
+                    style={{
+                        ...styles.deleteButton,
+                        opacity: columns.length <= 1 ? 0.5 : 1,
+                        cursor: columns.length <= 1 ? "not-allowed" : "pointer"
+                    }}
                     >
                     <Trash2 size={18} />
                     </button>

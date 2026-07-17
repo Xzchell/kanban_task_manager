@@ -57,7 +57,7 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({ selectedMembers, onMemb
         const isAlreadyAdded = selectedMembers.some((m) => m.id === foundUser.id);
         if (isAlreadyAdded) return;
         
-        const currentRoleMeta = AVAILABLE_ROLES[selectedRoleId] || AVAILABLE_ROLES[2];
+        const currentRoleMeta = AVAILABLE_ROLES.find(r => r.id === selectedRoleId) || AVAILABLE_ROLES[1];
 
         const newMember: IBoardMember = {
             id: foundUser.id,
@@ -116,15 +116,25 @@ const MemberSelector: React.FC<MemberSelectorProps> = ({ selectedMembers, onMemb
                             </div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <select 
-                                value={selectedRoleId}
-                                onChange={(e) => setSelectedRoleId(Number(e.target.value))}
-                                style={styles.roleSelect}
-                            >
-                                <option value={2}>Участник</option>
-                                <option value={3}>Наблюдатель</option>
-                                <option value={1}>Владелец</option>
-                            </select>
+                        <select 
+                            value={selectedRoleId}
+                            onChange={(e) => setSelectedRoleId(Number(e.target.value))}
+                            style={{
+                                ...styles.roleSelect,
+                                color: AVAILABLE_ROLES.find(r => r.id === selectedRoleId)?.activeColor || "#334155",
+                                borderColor: AVAILABLE_ROLES.find(r => r.id === selectedRoleId)?.activeColor || "#cbd5e1"
+                            }}
+                        >
+                            {AVAILABLE_ROLES.map((role) => (
+                                <option 
+                                    key={role.id} 
+                                    value={role.id}
+                                    style={{ color: role.activeColor, fontWeight: 600 }}
+                                >
+                                    {role.displayName}
+                                </option>
+                            ))}
+                        </select>
                             <button onClick={handleAddMember} style={styles.addButton}>
                                 Добавить
                             </button>
@@ -184,7 +194,7 @@ const styles = {
     userEmail: { fontSize: "12px", color: "#64748b" },
     addButton: { padding: "8px 16px", borderRadius: "10px", backgroundColor: "#7177f4", color: "#ffffff", border: "none", fontSize: "13px", fontWeight: 700, fontFamily: "var(--font-rounded), sans-serif", cursor: "pointer" },
     notFoundText: { color: 'red', fontFamily: "var(--font-rounded), sans-serif", fontWeight: 600, fontSize: '14px', padding: '10px' },
-    roleSelect: { padding: "8px 12px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#ffffff", fontSize: "13px", fontWeight: 600, fontFamily: "var(--font-rounded), sans-serif", color: "#334155", outline: "none", cursor: "pointer" },
+    roleSelect: { transition: "all 0.2s ease", padding: "8px 12px", borderRadius: "10px", border: "1px solid #cbd5e1", backgroundColor: "#ffffff", fontSize: "13px", fontWeight: 600, fontFamily: "var(--font-rounded), sans-serif", color: "#334155", outline: "none", cursor: "pointer" },
     
     selectedContainer: { marginTop: "14px", display: "flex", flexDirection: "column" as const, gap: "8px", width: "100%" },
     sectionTitle: { fontSize: "13px", fontWeight: 700, color: "#64748b" },

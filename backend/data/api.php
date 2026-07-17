@@ -6,6 +6,7 @@ require_once 'auth_checker.php';
 require_once 'controllers/TaskController.php';
 require_once 'controllers/UserController.php';
 require_once 'controllers/BoardController.php';
+require_once 'SessionService.php';
 require_once 'AuthService.php';
 
 $endpoint = $_GET['endpoint'] ?? '';
@@ -29,6 +30,7 @@ try{
     case 'users': userActions($pdo, $action, $userId); break;
     case 'boards': boardActions($pdo, $action, $userId); break;
     case 'auth': authActions($pdo, $action); break;
+    case 'sessions': sessionActions($pdo, $action); break;
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']);

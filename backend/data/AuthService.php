@@ -13,7 +13,7 @@ class AuthService{
 
     public function __construct(PDO $pdo)
     {
-        $this-> pdo = $pdo;
+        $this->pdo = $pdo;
     }
 
     public function login(string $email, string $password){
@@ -68,6 +68,11 @@ class AuthService{
                     'samesite' => 'None'
                 ]
             );
+
+            $fullName = trim(($userRow['last_name'] ?? '') . ' ' . ($userRow['first_name'] ?? '') . ' ' . ($userRow['middle_name'] ?? ''));
+
+            $sessionService = new SessionService($this->pdo);
+            $sessionService->sendLoginNotification($email, $fullName);
 
             echo json_encode([
                 "success" => true,
@@ -135,7 +140,7 @@ class AuthService{
         ], JSON_UNESCAPED_UNICODE);
     }
 
-    public function resendCode(string $email) {
+    public function resendCode(string $email, bool $isPasswordReset = false) {
         if (empty($email)) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Email обязателен"], JSON_UNESCAPED_UNICODE);
@@ -153,7 +158,7 @@ class AuthService{
             return;
         }
 
-        if ((int)$userRow['is_verified'] === 1) {
+        if (!$isPasswordReset && (int)$userRow['is_verified'] === 1) {
             echo json_encode(["success" => true, "message" => "Этот аккаунт уже успешно подтвержден"], JSON_UNESCAPED_UNICODE);
             return;
         }
@@ -167,10 +172,11 @@ class AuthService{
 
         $fullName = trim(($userRow['last_name'] ?? '') . ' ' . ($userRow['first_name'] ?? '') . ' ' . ($userRow['middle_name'] ?? ''));
         
-        if (empty($fullName))
+        if (empty($fullName)) {
             $fullName = "Пользователь";
+        }
 
-        $this->sendEmailNotification($email, $fullName, $newVerificationCode);
+        $this->sendEmailNotification($email, $fullName, $newVerificationCode, $isPasswordReset);
 
         echo json_encode([
             "success" => true,
@@ -178,17 +184,17 @@ class AuthService{
         ], JSON_UNESCAPED_UNICODE);
     }
     
-    private function sendEmailNotification(string $email, string $fullName, string $code) {
+    private function sendEmailNotification(string $email, string $fullName, string $code, bool $isPasswordReset = false) {
         $mail = new PHPMailer(true);
 
         try {
             $mail->isSMTP();                                  
             $mail->Host       = 'smtp.yandex.ru';
-            $mail->SMTPAuth   = true;                         
+            $mail->SMTPAuth   = true;                          
             $mail->Username   = 'xzchellnon@yandex.ru';
             $mail->Password   = 'ynoerqllkrpxxcso'; 
             $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;   
-            $mail->Port       = 465;                          
+            $mail->Port       = 465;                                    
             $mail->CharSet    = 'UTF-8';                      
 
             $mail->setFrom('xzchellnon@yandex.ru', 'Kanban Task');
@@ -198,23 +204,40 @@ class AuthService{
             $mail->XMailer = 'PHP/KanbanMailer'; 
             $mail->addCustomHeader('List-Unsubscribe', '<mailto:xzchellnon@yandex.ru?subject=unsubscribe>');
 
-            $mail->isHTML(true);                              
-            $mail->Subject = 'Ваш одноразовый код авторизации';
+            $mail->isHTML(true);            
+
+            if ($isPasswordReset) {
+                $mail->Subject = 'Восстановление пароля в Kanban Board';
+                
+                $titleText = "Запрос на смену пароля";
+                $descText = "Мы получили запрос на изменение пароля для вашего аккаунта. Введите следующий 6-значный код на странице подтверждения для установки нового пароля:";
+                $footerText = "Если вы не запрашивали смену пароля, просто проигнорируйте это письмо и убедитесь в безопасности вашего аккаунта.";
+                
+                $altDescText = "Мы получили запрос на изменение пароля. Ваш 6-значный код безопасности: {$code}";
+            } else {
+                $mail->Subject = 'Ваш одноразовый код авторизации';
+                
+                $titleText = "Добро пожаловать в Kanban Board!";
+                $descText = "Для завершения регистрации введите следующий 6-значный код безопасности на странице подтверждения:";
+                $footerText = "Если вы не создавали аккаунт, просто проигнорируйте это письмо.";
+                
+                $altDescText = "Для завершения регистрации введите следующий 6-значный код безопасности: {$code}";
+            }
             
             $mail->Body    = "
                 <div style='font-family: Arial, sans-serif; padding: 20px; color: #333;'>
-                    <h2 style='color: #4f46e5;'>Добро пожаловать в Kanban Board!</h2>
+                    <h2 style='color: #4f46e5;'>{$titleText}</h2>
                     <p>Здравствуйте, <b>" . htmlspecialchars($fullName) . "</b>.</p>
-                    <p>Для завершения регистрации введите следующий 6-значный код безопасности на странице подтверждения:</p>
+                    <p>{$descText}</p>
                     <div style='background-color: #f3f4f6; padding: 15px; font-size: 24px; font-weight: bold; letter-spacing: 4px; text-align: center; color: #111827; border-radius: 6px; display: inline-block; min-width: 150px;'>
                         {$code}
                     </div>
                     <br><br>
-                    <p style='font-size: 12px; color: #9ca3af;'>Если вы не создавали аккаунт, просто проигнорируйте это письмо.</p>
+                    <p style='font-size: 12px; color: #9ca3af;'>{$footerText}</p>
                 </div>
             ";
 
-            $mail->AltBody = "Здравствуйте, " . strip_tags($fullName) . ".\n\nДля завершения регистрации введите следующий 6-значный код безопасности: {$code}\n\nЕсли вы не создавали аккаунт, просто проигнорируйте это письмо.";
+            $mail->AltBody = "Здравствуйте, " . strip_tags($fullName) . ".\n\n" . $altDescText . "\n\n" . $footerText;
 
             $mail->send();
             return true;
@@ -224,7 +247,7 @@ class AuthService{
         }
     }
 
-    public function verifyCode(string $email, string $code) {
+    public function verifyCode(string $email, string $code, bool $isPasswordReset = false) {
         if (empty($email) || empty($code)) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Email и код обязательны"], JSON_UNESCAPED_UNICODE);
@@ -242,7 +265,7 @@ class AuthService{
             return;
         }
 
-        if ((int)$userRow['is_verified'] === 1) {
+        if (!$isPasswordReset && (int)$userRow['is_verified'] === 1) {
             http_response_code(400);
             echo json_encode(["success" => false, "message" => "Этот аккаунт уже верифицирован"], JSON_UNESCAPED_UNICODE);
             return;
@@ -268,7 +291,6 @@ class AuthService{
         }
 
         if (strtotime($verification['expires_at']) < time()) {
-
             $deleteCodeStmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?");
             $deleteCodeStmt->execute([$userId]);
 
@@ -277,56 +299,68 @@ class AuthService{
             return;
         }
 
-        $this->pdo->beginTransaction();
+        if ($isPasswordReset) {
+            $deleteCodeStmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?");
+            $deleteCodeStmt->execute([$userId]);
 
-        $updateUserStmt = $this->pdo->prepare("UPDATE users SET is_verified = 1 WHERE id = ?");
-        $updateUserStmt->execute([$userId]);
+            echo json_encode([
+                "success" => true,
+                "message" => "Код успешно подтвержден. Теперь вы можете изменить пароль."
+            ], JSON_UNESCAPED_UNICODE);
+            
+            return;
+        } else {
+            $this->pdo->beginTransaction();
 
-        $deleteCodeStmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?");
-        $deleteCodeStmt->execute([$userId]);
+            $updateUserStmt = $this->pdo->prepare("UPDATE users SET is_verified = 1 WHERE id = ?");
+            $updateUserStmt->execute([$userId]);
 
-        $token = bin2hex(random_bytes(32));
-        
-        $sessionStmt = $this->pdo->prepare("INSERT INTO user_sessions (user_id, token) VALUES (?, ?)");
-        $sessionStmt->execute([$userId, $token]);
+            $deleteCodeStmt = $this->pdo->prepare("DELETE FROM email_verifications WHERE user_id = ?");
+            $deleteCodeStmt->execute([$userId]);
 
-        $this->pdo->commit();
+            $token = bin2hex(random_bytes(32));
+            
+            $sessionStmt = $this->pdo->prepare("INSERT INTO user_sessions (user_id, token) VALUES (?, ?)");
+            $sessionStmt->execute([$userId, $token]);
 
-        $fullDataSql = "SELECT u.id, u.first_name, u.last_name, u.middle_name, u.birth_date as birthday, u.username, u.email FROM users u WHERE u.id = ?";
-        
-        $dataStmt = $this->pdo->prepare($fullDataSql);
-        $dataStmt->execute([$userId]);
-        $fullUser = $dataStmt->fetch(PDO::FETCH_ASSOC);
+            $this->pdo->commit();
 
-        $userData = [
-            "id" => (int)$fullUser['id'],
-            "first_name" => $fullUser['first_name'] ?? '',
-            "last_name" => $fullUser['last_name'] ?? '',
-            "middle_name" => $fullUser['middle_name'] ?? '',
-            "birthday" => $fullUser['birthday'] ?? '',
-            "username" => $fullUser['username'],
-            "email" => $fullUser['email'],
-            "role" => null
-        ];
+            $fullDataSql = "SELECT u.id, u.first_name, u.last_name, u.middle_name, u.birth_date as birthday, u.username, u.email FROM users u WHERE u.id = ?";
+            
+            $dataStmt = $this->pdo->prepare($fullDataSql);
+            $dataStmt->execute([$userId]);
+            $fullUser = $dataStmt->fetch(PDO::FETCH_ASSOC);
 
-        setcookie(
-            'auth_token',
-            $token,
-            [
-                'expires' => time() + 86400 * 7,
-                'path' => '/',
-                'domain' => 'kanban.local',
-                'secure' => true,
-                'httponly' => true,
-                'samesite' => 'None'
-            ]
-        );
+            $userData = [
+                "id" => (int)$fullUser['id'],
+                "first_name" => $fullUser['first_name'] ?? '',
+                "last_name" => $fullUser['last_name'] ?? '',
+                "middle_name" => $fullUser['middle_name'] ?? '',
+                "birthday" => $fullUser['birthday'] ?? '',
+                "username" => $fullUser['username'],
+                "email" => $fullUser['email'],
+                "role" => null
+            ];
 
-        echo json_encode([
-            "success" => true,
-            "message" => "Почта успешно подтверждена",
-            "user_data" => $userData
-        ], JSON_UNESCAPED_UNICODE);
+            setcookie(
+                'auth_token',
+                $token,
+                [
+                    'expires' => time() + 86400 * 7,
+                    'path' => '/',
+                    'domain' => 'kanban.local',
+                    'secure' => true,
+                    'httponly' => true,
+                    'samesite' => 'None'
+                ]
+            );
+
+            echo json_encode([
+                "success" => true,
+                "message" => "Почта успешно подтверждена",
+                "user_data" => $userData
+            ], JSON_UNESCAPED_UNICODE);
+        }
     }
 
     public function logout(string $token){
@@ -347,6 +381,36 @@ class AuthService{
         echo json_encode(["success" => "Выполнен выход"], JSON_UNESCAPED_UNICODE);
         return;
     }
+
+    public function updatePassword(string $email, string $newPassword) {
+        if (empty($email) || empty($newPassword)) {
+            http_response_code(400);
+            echo json_encode(["success" => false, "message" => "Email и новый пароль обязательны"], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $sql = "SELECT id FROM users WHERE email = ?";
+        $stmt = $this->pdo->prepare($sql);
+        $stmt->execute([$email]);
+        $userId = $stmt->fetchColumn();
+
+        if (!$userId) {
+            http_response_code(404);
+            echo json_encode(["success" => false, "message" => "Пользователь не найден"], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $passwordHash = password_hash($newPassword, PASSWORD_BCRYPT);
+
+        $updateSql = "UPDATE users SET password = ? WHERE id = ?";
+        $updateStmt = $this->pdo->prepare($updateSql);
+        $updateStmt->execute([$passwordHash, $userId]);
+
+        echo json_encode([
+            "success" => true,
+            "message" => "Пароль успешно изменен."
+        ], JSON_UNESCAPED_UNICODE);
+    }
 }
 
 
@@ -359,34 +423,45 @@ function authActions(PDO $pdo, string $action) {
             case 'login':
                 $email = $inputData['login'] ?? '';
                 $password = $inputData['password'] ?? '';
-
                 $authService->login($email, $password);
                 break;
+                
             case 'logout': 
                 $token = $_COOKIE['auth_token'] ?? '';
-
                 $authService->logout($token);
                 break;
+                
             case 'register':
                 $username = $inputData['username'] ?? '';
                 $email = $inputData['email'] ?? '';
                 $fullName = $inputData['fullNameUser'] ?? '';
                 $birthDate = $inputData['birthDate'] ?? '';
                 $password = $inputData['password'] ?? '';
-
                 $authService->register($username, $email, $fullName, $birthDate, $password);
                 break;
+                
             case 'resend_code':
                 $email = $inputData['email'] ?? '';
+                $isPasswordReset = (bool)($inputData['isPasswordReset'] ?? false);
                 
-                $authService->resendCode($email);
+                $authService->resendCode($email, $isPasswordReset);
                 break;
+                
             case 'verify':
                 $email = $inputData['email'] ?? '';
                 $code = $inputData['code'] ?? '';
-
-                $authService->verifyCode($email, $code);
+                $isPasswordReset = (bool)($inputData['isPasswordReset'] ?? false);
+                
+                $authService->verifyCode($email, $code, $isPasswordReset);
                 break;
+
+            case 'update_password':
+                $email = $inputData['email'] ?? '';
+                $newPassword = $inputData['password'] ?? '';
+                
+                $authService->updatePassword($email, $newPassword);
+                break;
+                
             default:
                 http_response_code(405);
                 echo json_encode(["error" => "Action not allowed"], JSON_UNESCAPED_UNICODE);
@@ -395,6 +470,5 @@ function authActions(PDO $pdo, string $action) {
         http_response_code(500);
         echo json_encode(["error" => $e->getMessage()], JSON_UNESCAPED_UNICODE);
     }
-
 }
 ?>

@@ -8,7 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import TaskModalCreate from "../task_modal_create";
 import { useAuth } from "../../context/auth_context";
 import { useBoard } from "../../hook/useBoards";
-import { Plus } from "lucide-react";
+import { ClipboardCheck, Plus, TriangleAlert } from "lucide-react";
 import TaskModal from "../task_modal";
 import FilterDrawer from "../../components/filter_drawer";
 import { useTask } from "../../hook/useTasks";
@@ -111,10 +111,36 @@ const BoardTasksList = () => {
         );
     }
 
-    if (error) return <div style={{ color: 'red', padding: '20px' }}>Ошибка: {error}</div>;
-    if (!selectedBoard) return <div style={{ padding: '20px' }}>Доска не выбрана</div>;
+    if (error) {
+        return (
+            <div style={listStyles.fullScreenCenter}>
+                <div style={listStyles.backgroundFixedWrapper}>
+                    <AnimatedBackground />
+                </div>
 
-    console.log(selectedBoard.timePoints + " ===================================");
+                <div style={{ ...listStyles.card, borderLeft: '5px solid #ef4444' }}>
+                    <div style={listStyles.iconError}><TriangleAlert /></div>
+                    <h2 style={listStyles.cardTitle}>Произошла ошибка</h2>
+                    <p style={listStyles.cardSubtitle}>{error}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!selectedBoard) {
+        return (
+            <div style={listStyles.fullScreenCenter}>
+                <div style={listStyles.backgroundFixedWrapper}>
+                    <AnimatedBackground />
+                </div>
+
+                <div style={listStyles.card}>
+                    <div style={listStyles.iconEmpty}><ClipboardCheck size={50}/></div>
+                    <h2 style={listStyles.cardTitle}>Доска не выбрана</h2>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div style={{ display: 'flex', height: '100vh', width: '100%'}}>
@@ -364,5 +390,52 @@ const listStyles = {
         height: "100vh",
         zIndex: 1,
         pointerEvents: "none" as const,
+    },
+    fullScreenCenter: {
+        display: 'flex',
+        flexDirection: 'column' as const,
+        justifyContent: 'center',
+        alignItems: 'center',
+        height: '100vh',
+        width: '100%',
+        position: 'relative' as const,
+        fontFamily: 'var(--font-rounded)', 
+        padding: '20px',
+        boxSizing: 'border-box' as const,
+    },
+
+    card: {
+        zIndex: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        backdropFilter: 'blur(10px)', 
+        WebkitBackdropFilter: 'blur(10px)',
+        padding: '40px 30px',
+        borderRadius: '20px', 
+        boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05)',
+        textAlign: 'center' as const,
+        maxWidth: '420px',
+        width: '100%',
+        animation: 'fadeIn 0.5s ease-out',
+    },
+    iconError: {
+        fontSize: '48px',
+        marginBottom: '15px',
+    },
+    iconEmpty: {
+        fontSize: '48px',
+        marginBottom: '15px',
+        opacity: 0.8,
+    },
+    cardTitle: {
+        fontSize: '22px',
+        fontWeight: 700,
+        color: '#1e293b',
+        margin: '0 0 10px 0',
+    },
+    cardSubtitle: {
+        fontSize: '14px',
+        color: '#64748b',
+        margin: '0 0 20px 0',
+        lineHeight: '1.5',
     },
 };

@@ -24,7 +24,7 @@ export const useUsers = () => {
         if (!userId) return [];
         try{
             const response = await api.post('', {query: username}, {
-                params: { endpoint: 'users', action: 'search_user', user_id: userId }
+                params: { endpoint: 'users', action: 'search_user', user_id: userId, board_id: selectedBoard ? selectedBoardId : -1 }
             });
 
             if (response.data.success && Array.isArray(response.data.user)){
@@ -46,7 +46,7 @@ export const useUsers = () => {
                 role_id: member.role?.id ?? 2
             }));
 
-            const response = await api.post("", { members: membersPayload }, {
+            await api.post("", { members: membersPayload }, {
                 params: { 
                     endpoint: 'users', 
                     action: 'add_board_members', 
@@ -54,19 +54,9 @@ export const useUsers = () => {
                     user_id: userId 
                 }
             });
-
-            if (response.data.success && socket) {
-                socket.emit('add_board_members', { 
-                    boardId: String(selectedBoardId), 
-                    newMembers: newMembers
-                });
-                return true;
-            }
             
-            return response.data.success;
         } catch (err) {
             console.error("Ошибка при добавлении участников на доску:", err);
-            return false;
         }
     };
 

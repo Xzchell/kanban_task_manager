@@ -154,7 +154,7 @@ class TaskController {
 
             $this->pdo->beginTransaction();
             
-            // Поиск задачи в системе
+            //Поиск задачи в системе
             $task = Task::find($this->pdo, $taskId);
             if (!$task) {
                 throw new Exception("Задача не найдена");
@@ -168,7 +168,7 @@ class TaskController {
             $task->deadline = $input['deadline'] ?? null;
             $task->timePointId = $input['time_point']['id'] ?? null;
 
-            // Каскадное обновление сущностей
+            //Каскадное обновление сущностей
             $task->save();
             $task->syncTags($input['tags'] ?? []);
             $task->syncExecutors($input['executors'] ?? [], $userId);

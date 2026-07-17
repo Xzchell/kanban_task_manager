@@ -8,9 +8,9 @@ interface DesignContextType {
 }
 
 const DesignContext = createContext<DesignContextType | undefined>(undefined);
-
+ 
 export const DesignProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [mode, setMode] = useState<DesignMode>('glass');
+    const [mode, setMode] = useState<DesignMode>('color');
 
     useEffect(() => {
         const savedMode = localStorage.getItem('design-mode') as DesignMode;

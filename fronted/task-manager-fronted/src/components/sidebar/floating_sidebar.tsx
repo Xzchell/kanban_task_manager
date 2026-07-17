@@ -23,11 +23,15 @@ export const FloatingSidebar: React.FC = () => {
     const location = useLocation();
     const { logout } = useAuth();
     const { mode } = useDesignMode();
+
+    const user = useAuth().user;
     
     const { loading, selectedBoard, resetDataBoard } = useBoard();
 
     const activeDesign = theme.modes[mode];
     const currentTab = location.pathname.split('/')[1] || 'boards';
+
+    const initials = `${user?.first_name?.[0] || ''}${user?.last_name?.[0] || ''}`.toUpperCase();
 
     useEffect(() => {
         setActiveTab(currentTab);
@@ -181,11 +185,11 @@ export const FloatingSidebar: React.FC = () => {
                     style={{ ...styles.profileCard, justifyContent: isCollapsed ? 'center' : 'flex-start' }} 
                     onClick={() => navigate('/profile')}
                 >
-                    <div style={styles.avatar}>В</div>
+                    <div style={styles.avatar}>{initials}</div>
                     {!isCollapsed && (
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.userInfo}>
-                            <span style={styles.userName}>Владислав</span>
-                            <span style={styles.userRole}>Разработчик</span>
+                            <span style={styles.userName}>{user?.first_name + " " + user?.middle_name}</span>
+                            <span style={styles.userRole}>Профиль</span>
                         </motion.div>
                     )}
                 </div>
@@ -306,13 +310,14 @@ const styles = {
         width: '36px',
         height: '36px',
         borderRadius: '12px',
-        backgroundColor: '#4f7ef7',
-        color: '#fff',
+        backgroundColor: "#e0e7ff",
+         color: "#7177f4",
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         fontWeight: 'bold',
         flexShrink: 0,
+        fontFamily: 'var(--font-rounded)'
     },
     userInfo: {
         display: 'flex',

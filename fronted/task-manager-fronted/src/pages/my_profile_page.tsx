@@ -1,388 +1,326 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useAuth } from '../context/auth_context';
-import { API_URL } from '../api_key';
-
-interface IProfileData {
-  id: number;
-  first_name: string;
-  last_name: string;
-  middle_name: string;
-  email: string;
-  birthday: string;
-  username: string;
-  role: {
-    id: number;
-    role_name: string;
-    permission_level: number;
-    description: string;
-    background_color: string;
-    text_color: string;
-  };
-  stats: {
-    total: number;
-    todo: number;
-    in_progress: number;
-    done: number;
-  };
-}
+import { useDesignMode } from '../context/design_context';
+import { theme } from '../themes/themes';
+import { AnimatedBackground } from '../components/animated_background';
+import DefaultButton from '../components/default_button';
+import { api } from '../api_axios';
+import FormInput from '../components/form_input';
+import { useNavigate } from 'react-router-dom';
+import { UserSessionsBlock } from '../components/UserSessionsBlock';
 
 export const ProfilePage: React.FC = () => {
-  const { user } = useAuth(); 
-  const userId = user?.id;
+  const { user, setUser } = useAuth();
+  const { mode } = useDesignMode();
+  const activeTheme = theme.modes[mode];
+
+  const navigate = useNavigate();
+
+  const [isEditing, setIsEditing] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
-  const [profile, setProfile] = useState<IProfileData | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const [lastName, setLastName] = useState<string>(user?.last_name || '');
+  const [firstName, setFirstName] = useState<string>(user?.first_name || '');
+  const [middleName, setMiddleName] = useState<string>(user?.middle_name || '');
+  const [username, setUsername] = useState<string>(user?.username || '');
+  const [birthday, setBirthday] = useState<string>(user?.birthday || '');
 
-  useEffect(() => {
-    if (!userId) return;
+  if (!user) {
+    return (
+      <div style={styles.profileCenteredState}>
+        <div style={styles.backgroundFixedWrapper}>
+          <AnimatedBackground />
+        </div>
+        <div style={{ zIndex: 2 }}>Авторизуйтесь для просмотра профиля</div>
+      </div>
+    );
+  }
 
-    const fetchProfile = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `${API_URL}?endpoint=users&action=get_profile&user_id=${userId}`, 
-          { withCredentials: true }
-        );
-        if (response.data.error) throw new Error(response.data.error);
-        setProfile(response.data);
-      } catch (err: unknown) {
-        if (axios.isAxiosError(err)) {
-          setError(err.response?.data?.error || 'Ошибка сети при загрузке профиля');
-        } else if (err instanceof Error) {
-          setError(err.message);
-        } else {
-          setError('Произошла непредвиденная ошибка');
-        }
-      } finally {
-        setLoading(false);
-      }
+  const initials = `${user.first_name?.[0] || ''}${user.last_name?.[0] || ''}`.toUpperCase();
+
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsLoading(true);
+    setErrorMessage(null);
+
+    const payload = {
+      last_name: lastName,
+      first_name: firstName,
+      middle_name: middleName,
+      username: username,
+      birthday: birthday,
     };
 
-    fetchProfile();
-  }, [userId]);
+    try {
+      const response = await api.post('', 
+        payload, 
+        { params: { endpoint: 'users', action: 'update_profile' } }
+      );
 
-  if (!userId) {
-    return (
-      <div style={styles.profileCenteredState}>
-        <div>Авторизуйтесь для просмотра профиля</div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div style={styles.profileCenteredState}>
-        <div style={{ animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' }}>Загрузка профиля...</div>
-      </div>
-    );
-  }
-
-  if (error || !profile) {
-    return (
-      <div style={styles.profileCenteredState}>
-        <div style={styles.profileErrorBlock}>{error || 'Ошибка загрузки'}</div>
-      </div>
-    );
-  }
-
-  const initials = `${profile.first_name[0] || ''}${profile.last_name[0] || ''}`.toUpperCase();
+      if (response.data && response.data.success) {
+        const updatedUser = { ...user, ...payload };
+        
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        
+        if (typeof setUser === 'function') {
+          setUser(updatedUser);
+        }
+        setIsEditing(false);
+      } else {
+        setErrorMessage(response.data.message || 'Не удалось обновить профиль.');
+      }
+    } catch (err) {
+      setErrorMessage('Произошла сетевая ошибка.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
-    <div style={styles.profilePageContainer}>
-      <div style={styles.profileWrapper}>
-        
+    <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
+      <div style={styles.backgroundFixedWrapper}>
+        <AnimatedBackground />
+      </div>
 
-        <div style={styles.profileHeaderCard}>
-          <div style={styles.profileAvatar}>
-            {initials}
-          </div>
-
-          <div style={styles.profileHeaderInfo}>
-            <div style={styles.profileNameRow}>
-              <h1 style={styles.profileMainTitle}>{profile.last_name} {profile.first_name} {profile.middle_name}</h1>
-              <span
-                style={{
-                  ...styles.profileRoleBadge,
-                  backgroundColor: profile.role.background_color || '#e2e8f0',
-                  color: profile.role.text_color || '#475569',
-                }}
-              >
-                {profile.role.role_name}
-              </span>
-            </div>
-            
-            <p style={styles.profileRoleDesc}>
-              {profile.role.description || 'Описание роли в системе управления задачами не заполнено.'}
+      <div style={styles.pageContainer}>
+        <div style={styles.headerRow}>
+          <div>
+            <h1 style={styles.title}>{isEditing ? 'Редактирование профиля' : 'Мой профиль'}</h1>
+            <p style={styles.subtitle}>
+              {isEditing ? 'Измените системные данные учетной записи' : 'Персональные данные вашего аккаунта'}
             </p>
-            <div style={styles.profileAccessLevel}>
-              Уровень доступа в системе: <span style={styles.profileAccessLevelValue}>{profile.role.permission_level}</span>
-            </div>
+          </div>
+          <div style = {{display: "flex", flexDirection: "row", gap: "10px"}}>
+          {!isEditing && (
+            <DefaultButton 
+              text="Редактировать профиль" 
+              onClick={() => setIsEditing(true)} 
+            />
+          )}
+          {!isEditing && (
+            <DefaultButton 
+              text="Смена пароля" 
+              status='danger'
+              onClick={() => navigate('/profile-changepassword')} 
+            />
+          )}
           </div>
         </div>
 
-        <div style={styles.profileGrid}>
-          
-          <div style={styles.profileAccountDetails}>
-            <h2 style={styles.profileSectionTitle}>Данные аккаунта</h2>
-            
-            <div style={styles.profileDetailsList}>
-              <div style={styles.profileDetailsItem}>
-                <label style={styles.profileItemLabel}>Имя пользователя</label>
-                <span style={styles.profileUsernameText}>@{profile.username}</span>
-              </div>
+        <div style={styles.scrollContainer}>
+          {isEditing ? (
+            <form onSubmit={handleSave} style={{ ...activeTheme.searchBar, ...styles.editFormCard, borderRadius: theme.borderRadius.xlarge }}>
+              <h2 style={styles.cardSectionTitle}>Личные данные</h2>
               
-              <div style={styles.profileDetailsItem}>
-                <label style={styles.profileItemLabel}>Email</label>
-                <span style={styles.profileEmailText}>{profile.email}</span>
+              {errorMessage && (
+                <div style={{ color: '#ef4444', fontSize: '14px', fontWeight: 600 }}>
+                  {errorMessage}
+                </div>
+              )}
+
+              <div style={styles.formGrid}>
+                <FormInput 
+                  id="last_name"
+                  label="Фамилия"
+                  type="text"
+                  value={lastName}
+                  onChange={setLastName}
+                  placeholder="Введите фамилию"
+                />
+
+                <FormInput 
+                  id="first_name"
+                  label="Имя"
+                  type="text"
+                  value={firstName}
+                  onChange={setFirstName}
+                  placeholder="Введите имя"
+                />
+
+                <FormInput 
+                  id="middle_name"
+                  label="Отчество"
+                  type="text"
+                  value={middleName}
+                  onChange={setMiddleName}
+                  placeholder="Введите отчество (если есть)"
+                />
+
+                <FormInput 
+                  id="username"
+                  label="Username"
+                  type="text"
+                  value={username}
+                  onChange={setUsername}
+                  placeholder="Придумайте никнейм"
+                />
+
+                <FormInput 
+                  id="birthday"
+                  label="Дата рождения"
+                  type="date-only"
+                  value={birthday}
+                  onChange={setBirthday}
+                  placeholder="ГГГГ-ММ-ДД"
+                />
               </div>
-              
-              <div style={styles.profileDetailsItem}>
-                <label style={styles.profileItemLabel}>Дата рождения</label>
-                <span style={styles.profileGenericText}>{profile.birthday}</span>
+
+              <div style={styles.formActions}>
+                <DefaultButton
+                  onClick={() => setIsEditing(false)}
+                  text='Отмена'
+                  status='secondary'
+                />
+                <DefaultButton 
+                  text={isLoading ? "Сохранение..." : "Сохранить изменения"} 
+                  onClick={handleSave} 
+                />
+              </div>
+            </form>
+          ) : (
+            <div style={styles.cloudsContainer}>
+              <div style={{ ...activeTheme.searchBar, ...styles.cloudCard, borderRadius: theme.borderRadius.xlarge }}>
+                <div style={styles.userProfileCell}>
+                  <div style={styles.avatar}>{initials}</div>
+                  <div>
+                    <span style={styles.fullNameText}>
+                      {user.last_name} {user.first_name} {user.middle_name ?? ""}
+                    </span>
+                    <div style={styles.systemRoleText}>Системный аккаунт</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={styles.cloudsGrid}>
+                <div style={{ ...activeTheme.searchBar, ...styles.cloudCard, borderRadius: theme.borderRadius.xlarge }}>
+                  <span style={styles.infoLabel}>Имя пользователя</span>
+                  <span style={styles.usernameText}>@{user.username}</span>
+                </div>
+
+                <div style={{ ...activeTheme.searchBar, ...styles.cloudCard, borderRadius: theme.borderRadius.xlarge }}>
+                  <span style={styles.infoLabel}>Электронная почта</span>
+                  <span style={styles.infoValue}>{user.email}</span>
+                </div>
+
+                <div style={{ ...activeTheme.searchBar, ...styles.cloudCard, borderRadius: theme.borderRadius.xlarge }}>
+                  <span style={styles.infoLabel}>Дата рождения</span>
+                  <span style={styles.infoValue}>{user.birthday || 'Не указана'}</span>
+                </div>
+              </div>
+
+              <div style={{ width: "100%" }}>
+                <UserSessionsBlock />
               </div>
             </div>
-          </div>
-
-          <div style={styles.profileStatsSection}>
-            <h2 style={styles.profileSectionTitlePadding}>Эффективность работы</h2>
-            
-            <div style={styles.profileStatsGrid}>
-              <div style={{ ...styles.profileStatCard, ...styles.statTotal }}>
-                <div style={styles.statLabel}>Всего задач</div>
-                <div style={{ ...styles.statValue, color: '#4f46e5' }}>{profile.stats.total}</div>
-                <div style={styles.statSub}>закреплено за вами</div>
-              </div>
-
-              <div style={{ ...styles.profileStatCard, ...styles.statProgress }}>
-                <div style={styles.statLabel}>В работе</div>
-                <div style={{ ...styles.statValue, color: '#f59e0b' }}>{profile.stats.in_progress}</div>
-                <div style={styles.statSub}>активные спринты</div>
-              </div>
-
-              <div style={{ ...styles.profileStatCard, ...styles.statTodo }}>
-                <div style={styles.statLabel}>К выполнению</div>
-                <div style={{ ...styles.statValue, color: '#3b82f6' }}>{profile.stats.todo}</div>
-                <div style={styles.statSub}>в бэклоге задач</div>
-              </div>
-
-              <div style={{ ...styles.profileStatCard, ...styles.statDone }}>
-                <div style={styles.statLabel}>Выполнено</div>
-                <div style={{ ...styles.statValue, color: '#10b981' }}>{profile.stats.done}</div>
-                <div style={styles.statSub}>успешные релизы</div>
-              </div>
-            </div>
-          </div>
-
+          )}
         </div>
-
       </div>
     </div>
   );
 };
 
+export default ProfilePage;
+
 const styles = {
-  profilePageContainer: {
-    minHeight: '100vh',
-    backgroundColor: 'rgba(248, 250, 252, 0.5)',
-    padding: window.innerWidth > 768 ? '48px' : '24px',
-    fontFamily: 'var(--font-rounded), sans-serif',
-    color: '#334155',
-    boxSizing: 'border-box' as const,
+  pageContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    flex: 1,
+    overflow: "hidden",
+    zIndex: 2,
+    fontFamily: "var(--font-rounded)"
   },
-  profileWrapper: {
-    maxWidth: '896px',
-    margin: '0 auto',
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '32px',
+  backgroundFixedWrapper: {
+    position: "fixed" as const,
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    zIndex: 1,
+    pointerEvents: "none" as const,
   },
   profileCenteredState: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
-    backgroundColor: '#f8fafc',
+    width: '100%',
     color: '#64748b',
     fontSize: '18px',
     fontFamily: 'var(--font-rounded), sans-serif',
   },
-  profileErrorBlock: {
-    backgroundColor: '#fef2f2',
-    color: '#dc2626',
-    padding: '16px',
-    borderRadius: '12px',
-    border: '1px solid #fee2e2',
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+  headerRow: { 
+    paddingTop: "50px",
+    paddingLeft: "120px",
+    paddingRight: "20px",
+    marginBottom: "10px",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    width: "auto"
   },
-  profileHeaderCard: {
-    backgroundColor: '#fff',
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-    borderRadius: '16px',
-    padding: '24px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-    display: 'flex',
-    flexDirection: window.innerWidth > 768 ? ('row' as const) : ('column' as const),
-    alignItems: window.innerWidth > 768 ? ('flex-start' as const) : ('center' as const),
-    gap: '24px',
+  title: { fontSize: "26px", fontWeight: 700, color: "#1e293b", margin: "0 0 6px 0" },
+  subtitle: { fontSize: "14px", color: "#64748b", margin: 0 },
+  scrollContainer: {
+    paddingLeft: "120px",
+    paddingRight: "20px",
+    paddingTop: "15px",
+    paddingBottom: "30px",
+    flex: 1,
+    overflowY: "auto" as const,
+    WebkitMaskImage: `
+        linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent)
+    `,
+    maskImage: `
+        linear-gradient(to bottom, transparent, black 24px, black calc(100% - 24px), transparent)
+    `,
+    WebkitMaskComposite: "source-in" as const,
+    maskComposite: "intersect" as const,
   },
-  profileAvatar: {
-    width: '96px',
-    height: '96px',
-    borderRadius: '16px',
-    background: 'linear-gradient(to top right, #6366f1, #8b5cf6)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    color: '#fff',
-    fontSize: '30px',
-    fontWeight: 600,
-    boxShadow: '0 4px 6px -1px rgba(99, 102, 241, 0.2)',
-    flexShrink: 0,
+  cloudsContainer: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "20px",
+    width: "100%"
   },
-  profileHeaderInfo: {
-    textAlign: window.innerWidth > 768 ? ('left' as const) : ('center' as const),
-    width: '100%',
+  cloudsGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "20px",
+    width: "100%"
   },
-  profileNameRow: {
-    display: 'flex',
-    flexDirection: window.innerWidth > 768 ? ('row' as const) : ('column' as const),
-    alignItems: 'center',
-    gap: '12px',
-    margin: 0,
+  cloudCard: {
+    padding: "20px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.02)",
+    display: "flex",
+    flexDirection: "column" as const,
+    justifyContent: "center"
   },
-  profileMainTitle: {
-    fontSize: window.innerWidth > 768 ? '30px' : '24px',
-    fontWeight: 700,
-    color: '#0f172a',
-    margin: 0,
+  userProfileCell: { display: "flex", alignItems: "center", gap: "16px" },
+  avatar: { width: "46px", height: "46px", borderRadius: "50%", backgroundColor: "#e0e7ff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", fontWeight: 700, color: "#7177f4" },
+  fullNameText: { fontSize: "18px", fontWeight: 700, color: "#1e293b" },
+  systemRoleText: { fontSize: "12px", color: "#94a3b8", marginTop: "2px" },
+  usernameText: { fontSize: "16px", color: "#7177f4", fontWeight: 600, marginTop: "6px" },
+  infoLabel: { fontSize: "12px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase" as const, letterSpacing: "0.05em" },
+  infoValue: { fontSize: "16px", color: "#334155", fontWeight: 600, marginTop: "6px" },
+  editFormCard: {
+    padding: "24px",
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.02)",
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: "20px"
   },
-  profileRoleBadge: {
-    alignSelf: 'center',
-    padding: '4px 12px',
-    borderRadius: '8px',
-    fontSize: '12px',
-    fontWeight: 600,
-    letterSpacing: '0.05em',
-    textTransform: 'uppercase' as const,
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+  cardSectionTitle: { fontSize: "16px", fontWeight: 700, color: "#1e293b", margin: 0 },
+  formGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+    gap: "16px"
   },
-  profileRoleDesc: {
-    fontSize: '14px',
-    color: '#64748b',
-    maxWidth: '576px',
-    margin: '12px 0',
-    lineHeight: '1.5',
-  },
-  profileAccessLevel: {
-    fontSize: '12px',
-    color: '#94a3b8',
-  },
-  profileAccessLevelValue: {
-    fontWeight: 600,
-    color: '#475569',
-  },
-  profileGrid: {
-    display: 'grid',
-    gridTemplateColumns: window.innerWidth > 768 ? 'repeat(3, minmax(0, 1fr))' : '100%',
-    gap: '24px',
-  },
-  profileSectionTitle: {
-    fontSize: '14px',
-    fontWeight: 600,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.1em',
-    color: '#94a3b8',
-    margin: '0 0 16px 0',
-  },
-  profileSectionTitlePadding: {
-    fontSize: '14px',
-    fontWeight: 600,
-    textTransform: 'uppercase' as const,
-    letterSpacing: '0.1em',
-    color: '#94a3b8',
-    margin: '0 0 16px 0',
-    paddingLeft: '8px',
-  },
-  profileAccountDetails: {
-    backgroundColor: '#fff',
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-    borderRadius: '16px',
-    padding: '24px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-  },
-  profileDetailsList: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-    gap: '16px',
-    fontSize: '14px',
-  },
-  profileDetailsItem: {
-    display: 'flex',
-    flexDirection: 'column' as const,
-  },
-  profileItemLabel: {
-    display: 'block',
-    fontSize: '12px',
-    color: '#94a3b8',
-    marginBottom: '4px',
-  },
-  profileUsernameText: {
-    fontFamily: 'monospace',
-    fontWeight: 600,
-    color: '#334155',
-  },
-  profileEmailText: {
-    wordBreak: 'break-all' as const,
-    fontWeight: 600,
-    color: '#334155',
-  },
-  profileGenericText: {
-    fontWeight: 600,
-    color: '#334155',
-  },
-  profileStatsSection: {
-    width: '100%',
-  },
-  profileStatsGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-    gap: '16px',
-  },
-  profileStatCard: {
-    backgroundColor: '#fff',
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-    borderRadius: '16px',
-    padding: '20px',
-    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-  },
-  statLabel: {
-    fontSize: '12px',
-    fontWeight: 600,
-    color: '#94a3b8',
-    textTransform: 'uppercase' as const,
-  },
-  statValue: {
-    fontSize: '30px',
-    fontWeight: 700,
-    marginTop: '8px',
-  },
-  statSub: {
-    fontSize: '12px',
-    color: '#94a3b8',
-    marginTop: '4px',
-  },
-  statTotal: {
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-  },
-  statProgress: {
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-  },
-  statTodo: {
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-  },
-  statDone: {
-    border: '1px solid rgba(226, 232, 240, 0.8)',
-  },
+  formActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "12px",
+    marginTop: "10px"
+  }
 };

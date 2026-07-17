@@ -129,12 +129,20 @@ class BoardController {
             $board->save(); 
             $board->syncColumns($input['columns'] ?? []);
             $board->syncTimePoints($input['timePoints'] ?? []);
+
+            $sqlDetails = "SELECT GetBoardDetailsFunction(:board_id, :user_id) AS board_info_json";
+            $stmtDetails = $this->pdo->prepare($sqlDetails);
+            $stmtDetails->execute(['board_id' => $boardId, 'user_id' => $userId]);
+            $resultDetails = $stmtDetails->fetch(PDO::FETCH_ASSOC);
+            $freshBoardData = json_decode($resultDetails['board_info_json'], true);
+
             $this->pdo->commit();
             
             http_response_code(200);
             echo json_encode([
                 "success" => true, 
-                "message" => "Данные доски успешно обновлены"
+                "message" => "Данные доски успешно обновлены",
+                "board" => $freshBoardData
             ], JSON_UNESCAPED_UNICODE);
 
         } catch (Exception $e) {

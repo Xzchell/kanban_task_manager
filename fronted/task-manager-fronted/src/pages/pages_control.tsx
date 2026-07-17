@@ -12,14 +12,16 @@ import { theme } from "../themes/themes";
 import BoardMembersPage from "./board_workplace/board_members_page/board_members_page";
 import { BoardSocketSync } from "../context/board_socket_sync";
 import BoardSettingsPage from "./board_workplace/board_settings_page/board_settings_page";
-import InVitePage from "./invite_page";
+import { InviteWrapper } from "./invite_page/InviteWrapper";
+import GlobalSettingsPage from "./global_settings_page";
+import ChangePasswordPage from "./ForgotPasswordWidget";
 
 type AuthorizedLayoutProps = {
     children: ReactNode;
 };
 
 const AuthorizedLayout = ({ children }: AuthorizedLayoutProps) => {
-    if (location.pathname !== "/invite"){
+    if (!location.pathname.startsWith("/invite")){
         return (
             <div style={{ display: 'flex', height: '100vh', width: '100%' }}>
                 <FloatingSidebar/>
@@ -77,7 +79,7 @@ const PagesControl = () => {
                                 } />
                                 <Route path="/settings" element={
                                     <motion.div {...animProps}>
-                                        <></>
+                                        <GlobalSettingsPage/>
                                     </motion.div>
                                 } />
                                 <Route path="/profile" element={
@@ -90,6 +92,13 @@ const PagesControl = () => {
                                     <ProtectedBoardRoute>
                                         <motion.div {...animProps}>
                                             <BoardTasksList />
+                                        </motion.div>
+                                    </ProtectedBoardRoute>
+                                } />
+                                <Route path="/profile-changepassword" element={
+                                    <ProtectedBoardRoute>
+                                        <motion.div {...animProps}>
+                                            <ChangePasswordPage />
                                         </motion.div>
                                     </ProtectedBoardRoute>
                                 } />
@@ -107,12 +116,10 @@ const PagesControl = () => {
                                         </motion.div>
                                     </ProtectedBoardRoute>
                                 } />
-                                <Route path="/invite" element={
-                                    <ProtectedBoardRoute>
-                                        <motion.div {...animProps}>
-                                            <InVitePage/>
-                                        </motion.div>
-                                    </ProtectedBoardRoute>
+                                <Route path="/invite/accept" element={
+                                    <motion.div {...animProps}>
+                                        <InviteWrapper />
+                                    </motion.div>
                                 } />
 
                                 <Route path="*" element={<Navigate to="/boards" />} />

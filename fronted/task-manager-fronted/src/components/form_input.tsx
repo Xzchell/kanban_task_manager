@@ -37,7 +37,21 @@ const FormInput: React.FC<FormInputProps> = ({
     
     const isPassword = type === "password";
     const isTextArea = type === "textarea";
-    const actualType = isPassword ? (showPassword ? "text" : "password") : "text";
+
+    const getNativeInputType = (): string => {
+        if (isPassword) {
+            return showPassword ? "text" : "password";
+        }
+        if (type === "date-only") {
+            return "date";
+        }
+        if (type === "date-time") {
+            return "datetime-local";
+        }
+        return type; 
+    };
+
+    const actualType = getNativeInputType();
 
     useEffect(() => {
         if (isTextArea && textareaRef.current) {

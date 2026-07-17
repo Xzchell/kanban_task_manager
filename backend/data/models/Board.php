@@ -40,7 +40,7 @@ class Board {
         ]);
     }
 
-    /* Diff-алгоритм для синхронизации колонок без потери связей (сравнение данных клиента и сервера)*/
+    /* Diff-алгоритм для синхронизации колонок с переносом задач при удалении столбца */
     public function syncColumns(array $newColumns): void {
         if (!$this->id) return;
 
@@ -51,13 +51,39 @@ class Board {
         $currentIds = array_column($currentColumns, 'id');
         $newIds = array_filter(array_column($newColumns, 'id')); 
 
+        //вычисляем ID колонок, которые идут на удаление
         $idsToDelete = array_diff($currentIds, $newIds);
+        
+        //удаление стобцов
         if (!empty($idsToDelete)) {
+            $remainingValidColumns = array_filter($newColumns, function($col) use ($currentIds, $idsToDelete) {
+                return isset($col['id']) && in_array($col['id'], $currentIds) && !in_array($col['id'], $idsToDelete);
+            });
+
+            usort($remainingValidColumns, function($a, $b) {
+                return $a['position'] <=> $b['position'];
+            });
+            
+            $fallbackColumnId = !empty($remainingValidColumns) ? (int)$remainingValidColumns[0]['id'] : null;
+
+            if (!$fallbackColumnId) {
+                throw new Exception("Невозможно удалить все колонки. Должна остаться как минимум одна существующая колонка.");
+            }
+
             $placeholders = implode(',', array_fill(0, count($idsToDelete), '?'));
+            
+            $moveTasksStmt = $this->pdo->prepare(
+                "UPDATE tasks SET id_column = ? WHERE id_column IN ($placeholders)"
+            );
+            
+            $executeParams = array_merge([$fallbackColumnId], array_values($idsToDelete));
+            $moveTasksStmt->execute($executeParams);
+
             $delStmt = $this->pdo->prepare("DELETE FROM board_columns WHERE id IN ($placeholders)");
             $delStmt->execute(array_values($idsToDelete));
         }
 
+        // создаем новые или обновляем существующие колонки
         foreach ($newColumns as $col) {
             if (isset($col['id']) && in_array($col['id'], $currentIds)) {
                 $updStmt = $this->pdo->prepare("UPDATE board_columns SET name = :title, position = :position WHERE id = :id");
