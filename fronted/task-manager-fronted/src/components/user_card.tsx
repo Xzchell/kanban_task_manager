@@ -1,5 +1,5 @@
 import { CircleCheckBig, Mail, User } from "lucide-react";
-import {type IUser } from "../context/auth_context";
+import type { IUser } from "../context/auth_context";
 
 export interface IUserCard {
     member: IUser;
@@ -7,6 +7,8 @@ export interface IUserCard {
 }
 
 const UserCard = ({ member, onSelect }: { member: IUser; onSelect: (user: IUser) => void }) => {
+    const role = (member as IUser & { role?: { color?: string; background_color?: string; name?: string } }).role;
+    const countTasks = (member as IUser & { count_tasks?: number }).count_tasks;
 
     return(
         <div style={styles.container} onClick={() => onSelect(member)} role="button" tabIndex={1}
@@ -21,9 +23,11 @@ const UserCard = ({ member, onSelect }: { member: IUser; onSelect: (user: IUser)
                 
                 <div className="userInfo" style={{ marginLeft: '15px', display: 'flex', flexDirection: 'column' as const, gap: '4px'}}>
                     <label>{member.first_name} {member.last_name} {member.middle_name}</label>
-                    <div style={{padding: '6px 8px', borderRadius: '10px', border: `1px solid color-mix(in srgb, ${member.role.color}, white 40%)`, backgroundColor: member.role.background_color || '#e3e3e3', color: member.role.color || '#333', width: 'fit-content'}}>
-                        <label>{member.role.name}</label>
-                    </div>
+                    {role && (
+                        <div style={{padding: '6px 8px', borderRadius: '10px', border: `1px solid color-mix(in srgb, ${role.color || '#94a3b8'}, white 40%)`, backgroundColor: role.background_color || '#e3e3e3', color: role.color || '#333', width: 'fit-content'}}>
+                            <label>{role.name || 'Роль'}</label>
+                        </div>
+                    )}
                 </div>
             </div>
             <hr style={styles.bottom_line}></hr>
@@ -34,7 +38,7 @@ const UserCard = ({ member, onSelect }: { member: IUser; onSelect: (user: IUser)
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px'}}>
                     <CircleCheckBig size={20} />
-                    <label>Задач в работе: {member.count_tasks}</label>
+                    <label>Задач в работе: {countTasks ?? 0}</label>
                 </div>
             </div>
         </div>

@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Plus, Layers } from "lucide-react";
 import NeonButton from "../../components/neon_button";
 import CustomModal from "../../components/custom_modal";
-import { AnimatedBackground } from "../../components/animated_background";
 import { BoardTypeSelector } from "./board_type_selector";
 
 interface IEmptyBoardStateProps {

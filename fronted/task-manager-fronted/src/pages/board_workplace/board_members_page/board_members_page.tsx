@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import { useBoard, type IBoardMember } from "../../../hook/useBoards";
 import CustomModal from "../../../components/custom_modal";
 import SearchBar from "../../../components/search_task_bar";
@@ -13,7 +13,7 @@ import { useDesignMode } from "../../../context/design_context";
 import { theme } from "../../../themes/themes";
 
 const BoardMembersPage: React.FC = () => {
-    const { selectedBoard, setSelectedBoard } = useBoard();
+    const { selectedBoard } = useBoard();
     const user = useAuth().user;
     const { addBoardMembersBD } = useUsers();
 
@@ -23,8 +23,8 @@ const BoardMembersPage: React.FC = () => {
     const activeTheme = theme.modes[mode];
 
     const [searchQuery, setSearchQuery] = useState("");
-    const [roleFilter, setRoleFilter] = useState<number | "all">("all");
-    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+    const [roleFilter] = useState<number | "all">("all");
+    const [sortOrder] = useState<"asc" | "desc">("asc");
 
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<IBoardMember | null>(null);

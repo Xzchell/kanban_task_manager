@@ -186,7 +186,7 @@ const BoardTasksList = () => {
 
                                     <Droppable 
                                         droppableId={column.id}
-                                        renderClone={(provided, snapshot, rubric) => {
+                                        renderClone={(provided, _snapshot, rubric) => {
                                             const task = column.items.find(t => String(t.id) === rubric.draggableId);
                                             return (
                                                 <div

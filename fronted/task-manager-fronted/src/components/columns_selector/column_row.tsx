@@ -1,7 +1,6 @@
 import React from "react";
 import { Trash2, Columns } from "lucide-react";
 import type { IColumns } from "../../hook/useBoards"; 
-import { useDesignMode } from "../../context/design_context";
 import { theme } from "../../themes/themes";
 import FormInput from "../form_input";
 
@@ -12,8 +11,6 @@ interface IColumnRowProps {
 }
 
 export const ColumnRow: React.FC<IColumnRowProps> = ({ column, onUpdate, onRemove }) => {
-  const { mode } = useDesignMode();
-
   return (
     <div style={styles.row}>
       <div style={styles.inputWrapper}>

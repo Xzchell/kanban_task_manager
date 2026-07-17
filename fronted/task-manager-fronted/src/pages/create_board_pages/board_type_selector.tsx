@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Zap, Building, X, Users, RefreshCw, Timer, ShieldCheck, BarChart3, ArrowRight } from "lucide-react";
+import { Zap, Building, ArrowRight, X } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import ProgressBar from "../../components/progress_bar";
 import FormInput from "../../components/form_input";

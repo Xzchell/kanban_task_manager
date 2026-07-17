@@ -9,7 +9,6 @@ import TagSelector from "../components/tag_selector";
 import type { ITags } from "../components/task_card";
 import UserSelector from "../components/user_selector";
 import { useTags } from "../hook/useTags";
-import TextArea from "../components/text_area";
 import { ToggleSwitch } from "../components/switcher";
 import { DeadlinePicker } from "../components/deadline_picker/deadline_picker";
 import { useDesignMode } from "../context/design_context";

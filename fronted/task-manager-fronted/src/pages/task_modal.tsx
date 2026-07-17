@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import type { ITaskData } from "../components/task_card";
 import DefaultButton from "../components/default_button";
-import { useAuth } from "../context/auth_context";
 import { useState, useEffect } from "react";
 import TaskModalPreview from "./task_modal_preview";
 import TaskModalEditor from "./task_modal_editor";

@@ -9,7 +9,7 @@ import DefaultButton from "../default_button";
 const SideBar = () => {
     const navigate = useNavigate();
     const {logout : authlogout} = useAuth();
-    const [activeTab, setActiveTab] = useState<string>("tasks");
+    const [, setActiveTab] = useState<string>("tasks");
     const handleLogout = () => authlogout()
     
     const sideBarItems: ISideBarItem[] = [
@@ -17,25 +17,6 @@ const SideBar = () => {
         { id: 2, name: 'Моя команда', icon: <i className="fa-solid fa-diagram-project"></i>, onClick: () => {navigate('/team'); setActiveTab('team') }},
         { id: 3, name: 'Мой профиль', icon: <i className="fa-solid fa-users"></i>, onClick: () => {navigate('/profile'); setActiveTab('profile')}},
     ];
-
-    const toggleConfig = [
-        { 
-            id: "tasks", 
-            label: "Задачи", 
-            onClick: () => { setActiveTab('tasks'); navigate('/tasks') } 
-        },
-        { 
-            id: "myteam", 
-            label: "Моя команда", 
-            onClick: () => { setActiveTab('myteam'); navigate('/team')} 
-        },
-        { 
-            id: "myprofile", 
-            label: "Мой профиль", 
-            onClick: () => { setActiveTab('myprofile'); navigate('/profile')} 
-        }
-    ];
-
 
     return (
         <div className="side-bar" style={styles.container}>

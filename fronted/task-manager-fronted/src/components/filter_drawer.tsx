@@ -3,7 +3,6 @@ import { motion } from "framer-motion";
 import React from "react";
 import type { ISortConfig } from "../hook/useTasks";
 import { useDesignMode } from "../context/design_context";
-import { theme } from "../themes/themes";
 import { ToggleSwitch } from "./switcher";
 
 export interface IFilterDrawer {
@@ -14,19 +13,14 @@ export interface IFilterDrawer {
 
 const FilterDrawer: React.FC<IFilterDrawer> = ({ onClose, sortConfig, setSortConfig }) => {
     const { mode } = useDesignMode();
-    const currentMode = theme.modes[mode];
-    
-    let isMvp = sortConfig.isMvpOnly;
-    let iAmExecutor = sortConfig.iAmExecutor;
+    void mode;
 
     const setIsMvp = (value : boolean) => {
-        isMvp = value;
         setSortConfig({ ...sortConfig, isMvpOnly: value})
     }
 
     const setIAmExecutor = (value : boolean) => {
-        iAmExecutor = value;
-        setSortConfig({ ...sortConfig, iAmExecutor})
+        setSortConfig({ ...sortConfig, iAmExecutor: value})
     }
 
     return (
