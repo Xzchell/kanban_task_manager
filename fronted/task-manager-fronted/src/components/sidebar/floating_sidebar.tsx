@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { theme } from '../../themes/themes';
 import { useDesignMode } from '../../context/design_context';
 import { useBoard } from '../../hook/useBoards';
-
+import siteLogo from '../../assets/site_logo.svg';
 interface MenuItem {
     id: string;
     icon: React.ReactNode;
@@ -82,7 +82,7 @@ export const FloatingSidebar: React.FC = () => {
                         animate={{ opacity: 1 }}
                         style={styles.logoWrapper}
                     >
-                        <img src="src/assets/site_logo.svg" alt="Logo" style={styles.logoImg} />
+                        <img src={siteLogo} alt="Logo" style={styles.logoImg} />
                         <h2 style={styles.logoTitle}>TaskManager</h2>
                     </motion.div>
                 )}

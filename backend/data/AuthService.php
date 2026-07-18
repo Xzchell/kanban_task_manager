@@ -62,10 +62,9 @@ class AuthService{
                 [
                     'expires' => time() + 86400 * 7,
                     'path' => '/',
-                    'domain' => 'kanban.local',
-                    'secure' => true,
+                    'secure' => isset($_SERVER['HTTPS']),
                     'httponly' => true,
-                    'samesite' => 'None'
+                    'samesite' => 'Lax'
                 ]
             );
 
@@ -348,10 +347,9 @@ class AuthService{
                 [
                     'expires' => time() + 86400 * 7,
                     'path' => '/',
-                    'domain' => 'kanban.local',
-                    'secure' => true,
+                    'secure' => isset($_SERVER['HTTPS']),
                     'httponly' => true,
-                    'samesite' => 'None'
+                    'samesite' => 'Lax'
                 ]
             );
 
@@ -372,10 +370,9 @@ class AuthService{
         setcookie('auth_token', '', [
             'expires' => time() - 3600,
             'path' => '/',
-            'domain' => 'kanban.local',
-            'secure' => true,
+            'secure' => isset($_SERVER['HTTPS']),
             'httponly' => true,
-            'samesite' => 'None'
+            'samesite' => 'Lax'
         ]);
 
         echo json_encode(["success" => "Выполнен выход"], JSON_UNESCAPED_UNICODE);

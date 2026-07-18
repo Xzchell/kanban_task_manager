@@ -11,7 +11,13 @@ export const useTags = (userId: number | undefined) => {
         if (!userId) return;
         setLoading(true);
         try {
-            const { data } = await api.get(`?endpoint=tasks&action=get_all_tags&user_id=${userId}`);
+            const { data } = await api.get('', {
+                params: {
+                    endpoint: 'tasks',
+                    action: 'get_all_tags',
+                    user_id: userId
+                }
+            });
             const parsedTags = data.map((t: any) => ({
                 id: Number(t.id),
                 name: t.name,

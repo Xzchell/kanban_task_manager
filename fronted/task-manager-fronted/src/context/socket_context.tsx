@@ -15,8 +15,10 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const [isConnected, setIsConnected] = useState(false);
 
     useEffect(() => {
-        const socketInstance = io('http://localhost:3001', { // адрес ws сервера
-            transports: ['websocket'], 
+        const wsUrl = import.meta.env.VITE_WS_URL || 'http://194.226.20.174:3001';
+
+        const socketInstance = io(wsUrl, {
+            transports: ['websocket'],
             autoConnect: true,
             reconnectionAttempts: 5,
             reconnectionDelay: 2000
